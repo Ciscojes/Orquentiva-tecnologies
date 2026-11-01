@@ -12,6 +12,11 @@ from typing import Annotated
 from fastapi import Depends, FastAPI, Header, HTTPException, status
 from pydantic import BaseModel, Field
 
+from sqlalchemy.orm import Session
+
+from app.database import get_db
+from app.models import Business
+
 DB_PATH = os.getenv("ORQENTIVA_DB", str(Path(__file__).parent.parent / "orqentiva.db"))
 DEMO_KEYS = {"demo-barberia-alfa": "alfa", "demo-barberia-beta": "beta"}
 
@@ -82,11 +87,25 @@ def health():
     return {"status": "ok", "project": "ORQENTIVA AI", "version": "0.1.0"}
 
 
+
 @app.get("/business/me")
-def my_business(business_id: Annotated[str, Depends(current_business)]):
-    with database() as conn:
-        record = conn.execute("SELECT id, name FROM businesses WHERE id=?", (business_id,)).fetchone()
-        return dict(record)
+def my_business(
+    business_id: Annotated[str, Depends(current_business)],
+    session: Annotated[Session, Depends(get_db)],
+):
+    business = session.get(Business, business_id)
+
+    if business is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Empresa no encontrada",
+        )
+
+    return {
+        "id": business.id,
+        "name": business.name,
+    }
+
 
 
 @app.get("/services")

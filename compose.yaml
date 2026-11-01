@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: orqentiva-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: orqentiva_db
+      POSTGRES_USER: orqentiva
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "127.0.0.1:5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orqentiva -d orqentiva_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
