@@ -328,3 +328,151 @@ footer {
     padding: 65px 6%;
   }
 }
+
+/* ========================================
+   ORQENTIVA - FORMULARIO DE CONTACTO
+   ======================================== */
+
+.contact-section {
+  padding: 90px 20px;
+  background: #10253d;
+  text-align: center;
+  color: #ffffff;
+}
+
+.contact-section > h2 {
+  font-size: clamp(28px, 4vw, 42px);
+  margin: 0 0 16px;
+}
+
+.contact-section > p {
+  color: #b8cad9;
+  margin: 0 auto 35px;
+  max-width: 600px;
+  line-height: 1.7;
+}
+
+/* Contenedor principal del formulario */
+.contact-form {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 35px;
+
+  background: #ffffff;
+  color: #10253d;
+  text-align: left;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  box-shadow: 0 20px 55px rgba(0, 0, 0, 0.2);
+}
+
+/* Título */
+.contact-form h3 {
+  font-size: 25px;
+  margin: 0 0 15px;
+  color: #10253d;
+  line-height: 1.3;
+}
+
+/* Etiquetas */
+.contact-form label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+  margin-top: 7px;
+}
+
+/* Campos y mensaje */
+.contact-form input,
+.contact-form textarea {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  padding: 14px 15px;
+
+  font-family: inherit;
+  font-size: 15px;
+
+  color: #10253d;
+  background: #f8fafc;
+
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+
+  outline: none;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+/* Estado de enfoque */
+.contact-form input:focus,
+.contact-form textarea:focus {
+  border-color: #36c6c0;
+  box-shadow: 0 0 0 3px rgba(54, 198, 192, 0.16);
+}
+
+/* Área del mensaje */
+.contact-form textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+/* Botón del formulario */
+.contact-form button {
+  display: block;
+  width: 100%;
+  margin-top: 15px;
+  padding: 15px 20px;
+
+  background: #36c6c0;
+  color: #10253d;
+
+  border: none;
+  border-radius: 9px;
+
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+
+  transition:
+    background 0.2s,
+    transform 0.2s;
+}
+
+.contact-form button:hover {
+  background: #28b3ad;
+  transform: translateY(-2px);
+}
+
+/* Mensaje después de validar */
+.contact-form .form-success {
+  color: #167b5b;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+/* Adaptación para celulares */
+@media (max-width: 600px) {
+  .contact-section {
+    padding: 65px 16px;
+  }
+
+  .contact-form {
+    padding: 24px 20px;
+    border-radius: 14px;
+  }
+
+  .contact-form h3 {
+    font-size: 22px;
+  }
+}
