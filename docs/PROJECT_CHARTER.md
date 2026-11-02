@@ -18,7 +18,7 @@
 1. **Sprint 01:** FastAPI + SQLite + datos de dos empresas + pruebas.
 2. **Sprint 02:** modelos robustos, PostgreSQL, migraciones, autorización.
 3. **Sprint 03:** LangGraph con flujo de reservas validado.
-4. **Sprint 04:** RAG por empresa y evaluaciones de recuperación.
+4. **Sprint 04 (alcance actualizado):** captación de leads; ver SPEC-004. RAG y sus evaluaciones quedan pendientes en el roadmap.
 5. **Sprint 05:** React, métricas, observabilidad y despliegue.
 
 ## Reglas de ingeniería

@@ -5,17 +5,20 @@ ADVERTENCIA: credenciales de DEMOSTRACIÓN; no publicar así en Internet.
 import os
 import sqlite3
 from contextlib import asynccontextmanager, contextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Header, HTTPException, status
-from pydantic import BaseModel, Field
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, ConfigDict, Field
 
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import Business
+from app.routes.leads import router as leads_router
 
 DB_PATH = os.getenv("ORQENTIVA_DB", str(Path(__file__).parent.parent / "orqentiva.db"))
 DEMO_KEYS = {"demo-barberia-alfa": "alfa", "demo-barberia-beta": "beta"}
@@ -69,6 +72,16 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(title="ORQENTIVA AI", version="0.1.0", description="API educativa multiempresa", lifespan=lifespan)
+app.include_router(leads_router)
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error(request, exc):
+    # Evitar que FastAPI devuelva el correo o mensaje rechazado al visitante.
+    if request.url.path == "/leads":
+        return JSONResponse(status_code=422, content={"detail": "Datos de contacto inválidos"})
+    from fastapi.exception_handlers import request_validation_exception_handler
+    return await request_validation_exception_handler(request, exc)
 
 
 def current_business(x_api_key: Annotated[str | None, Header()] = None) -> str:
@@ -78,6 +91,7 @@ def current_business(x_api_key: Annotated[str | None, Header()] = None) -> str:
 
 
 class AppointmentIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
     customer_name: str = Field(min_length=1, max_length=100)
     starts_at: datetime
 
@@ -119,15 +133,27 @@ def services(business_id: Annotated[str, Depends(current_business)]):
 def appointments(business_id: Annotated[str, Depends(current_business)]):
     with database() as conn:
         rows = conn.execute("SELECT id, customer_name, starts_at FROM appointments WHERE business_id=? ORDER BY starts_at", (business_id,)).fetchall()
-        return [dict(r) for r in rows]
+        return sorted(
+            [dict(r) for r in rows],
+            key=lambda row: datetime.fromisoformat(row["starts_at"]).astimezone(timezone.utc),
+        )
 
 
 @app.post("/appointments", status_code=201)
 def create_appointment(payload: AppointmentIn, business_id: Annotated[str, Depends(current_business)]):
     if payload.starts_at.tzinfo is None or payload.starts_at.utcoffset() is None:
         raise HTTPException(422, "Se requiere fecha con zona horaria (por ejemplo -06:00)")
-    starts_at = payload.starts_at.isoformat()
+    instant = payload.starts_at.astimezone(timezone.utc)
+    starts_at = instant.isoformat()
     with database() as conn:
+        # Serializar comprobación e inserción, incluso entre procesos distintos.
+        # Comparar también las reservas antiguas sin modificar sus fechas guardadas.
+        conn.execute("BEGIN IMMEDIATE")
+        existing = conn.execute(
+            "SELECT starts_at FROM appointments WHERE business_id=?", (business_id,)
+        ).fetchall()
+        if any(datetime.fromisoformat(row["starts_at"]).astimezone(timezone.utc) == instant for row in existing):
+            raise HTTPException(409, "Horario ya reservado para esta empresa")
         try:
             cursor = conn.execute(
                 "INSERT INTO appointments (business_id, customer_name, starts_at) VALUES (?,?,?)",

@@ -392,6 +392,7 @@ footer {
 
 /* Campos y mensaje */
 .contact-form input,
+.contact-form select,
 .contact-form textarea {
   display: block;
   width: 100%;
@@ -415,6 +416,7 @@ footer {
 
 /* Estado de enfoque */
 .contact-form input:focus,
+.contact-form select:focus,
 .contact-form textarea:focus {
   border-color: #36c6c0;
   box-shadow: 0 0 0 3px rgba(54, 198, 192, 0.16);
@@ -462,6 +464,9 @@ footer {
 }
 
 /* Adaptación para celulares */
+.contact-form .form-error { color: #a52222; }
+.contact-form button:disabled { opacity: 0.65; cursor: wait; }
+
 @media (max-width: 600px) {
   .contact-section {
     padding: 65px 16px;

@@ -129,6 +129,7 @@ const serviceIcons = ["✦", "⚡", "↗", "◈"];
 const anchors = ["home", "services", "solutions", "about", "contact"];
 
 function App() {
+  const [year] = useState(() => new Date().getFullYear());
   // Estado global del idioma de la página
   const [language, setLanguage] = useState<Language>(() => {
     try {
@@ -282,7 +283,7 @@ function App() {
         <strong>ORQENTIVA Technologies</strong>
 
         <span>
-          © {new Date().getFullYear()} — {t.footer}
+          © {year} — {t.footer}
         </span>
       </footer>
     </>
