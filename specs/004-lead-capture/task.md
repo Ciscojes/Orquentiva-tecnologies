@@ -37,5 +37,5 @@
 
 ## GIT
 
-- [ ] Revisar cambios en Source Control.
-- [ ] Registrar commit en español.
+- [x] Revisar cambios en Source Control.
+- [x] Registrar commit en español: 184dac2, confirmado por el usuario y Git.

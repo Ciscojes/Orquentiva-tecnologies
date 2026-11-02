@@ -11,8 +11,8 @@ DEMO_BUSINESSES = [
 ]
 
 
-def seed_database():
-    with SessionLocal.begin() as session:
+def seed_database(session_factory=SessionLocal):
+    with session_factory.begin() as session:
         for business_id, name, service_name, price in DEMO_BUSINESSES:
             business = session.get(Business, business_id)
 

@@ -21,5 +21,11 @@
 4. **Sprint 04 (alcance actualizado):** captación de leads; ver SPEC-004. RAG y sus evaluaciones quedan pendientes en el roadmap.
 5. **Sprint 05:** React, métricas, observabilidad y despliegue.
 
+## Incremento de consolidación posterior a Sprint 04
+
+SPEC-005 unifica servicios y reservas con SQLAlchemy/PostgreSQL, mantiene
+aislamiento y unicidad por empresa/instante y retira la inicialización automática
+de SQLite. El traslado de datos históricos se ejecuta por separado y explícitamente.
+
 ## Reglas de ingeniería
 Especificación antes de nuevas funcionalidades, pytest en CI, separación de datos por empresa, secretos fuera del repositorio, pruebas de regresión, documentación incremental.

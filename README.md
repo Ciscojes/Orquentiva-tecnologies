@@ -1,4 +1,4 @@
-# ORQENTIVA AI — Sprint 04
+# ORQENTIVA AI — Persistencia unificada (SPEC-005)
 
 ## Captación de leads
 
@@ -18,18 +18,28 @@ en `.env`. `DATABASE_URL` permite seleccionar explícitamente otra base de datos
 No colocar credenciales en React ni registrar estas variables.
 Los tests fuerzan bases SQLite temporales y no necesitan `.env`.
 
-Estado de la transición: `/business/me` y `/leads` usan SQLAlchemy/PostgreSQL;
-`/services` y `/appointments` conservan SQLite de demostración.
-El arranque todavía inicializa los datos demo en SQLite. No asumir una migración completa.
+`/business/me`, `/services`, `/appointments` y `/leads` utilizan la misma base
+SQLAlchemy/PostgreSQL configurada. El arranque no crea tablas ni datos demo.
+SQLite se utiliza únicamente en pruebas aisladas y como fuente histórica explícita.
 El límite de leads es básico, en memoria y por proceso (5 envíos/IP/minuto).
 Para varias instancias se necesita un contador compartido y proxies de confianza configurados.
 
-Ver `docs/AUDITORIA_SPRINT_04.md` y `specs/004-lead-capture/task.md`.
+Ver `docs/PERSISTENCIA_UNIFICADA.md` y `specs/005-unified-persistence/`.
 
-Las nuevas reservas se guardan con fecha UTC. Las reservas anteriores conservan
-su representación y se comparan por instante para impedir duplicados, incluso
-cuando dos solicitudes llegan simultáneamente con distintas zonas horarias.
+Las reservas se guardan con fecha UTC. La restricción única de PostgreSQL impide
+duplicados por empresa e instante, incluso con solicitudes simultáneas y offsets diferentes.
 El listado se ordena por instante y los nombres se validan después de quitar espacios.
+
+Los registros del antiguo `orqentiva.db` no se copian automáticamente. Para revisar
+un traslado sin escribir en la base de destino:
+
+```powershell
+python scripts/import_legacy_sqlite.py --source .\orqentiva.db
+```
+
+El script muestra solo cantidades y detecta conflictos. `--apply` realiza un traslado
+explícito en una transacción; requiere revisar previamente la base de destino y la simulación.
+No borra el archivo fuente ni reemplaza datos existentes.
 
 Para repetir la integración en una instancia PostgreSQL temporal independiente:
 
@@ -49,7 +59,7 @@ Prototipo educativo del TFM y futuro SaaS de ORQENTIVA Technologies.
 - Aislamiento por empresa en las consultas.
 - Pruebas automatizadas.
 
-> Seguridad: las API keys incluidas son **solo ejemplos**, están en el código para simplificar el aprendizaje. **NO exponer este servidor a Internet**. Falta autenticación real, autorización por roles, cifrado y auditoría. SQLite se usa como etapa de aprendizaje; producción irá sobre PostgreSQL.
+> Seguridad: las API keys incluidas son **solo ejemplos**, están en el código para simplificar el aprendizaje. **NO exponer este servidor a Internet**. Falta autenticación real, autorización por roles, cifrado y auditoría.
 
 ## Cómo ejecutarlo (Windows PowerShell)
 ```powershell
@@ -57,6 +67,14 @@ cd orqentiva-ai-v0
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
+```
+
+En una base nueva de desarrollo configurada para este proyecto, preparar explícitamente
+el esquema y los datos demo antes de iniciar la API:
+
+```powershell
+python -m alembic upgrade head
+python seed.py
 python -m uvicorn app.main:app --reload
 ```
 Abrir http://127.0.0.1:8000/docs

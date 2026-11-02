@@ -1,5 +1,8 @@
 # Auditoría y correcciones — 1 de noviembre de 2026
 
+Informe histórico del avance guardado por el usuario en 184dac2. Para el incremento
+posterior de persistencia unificada, consultar PERSISTENCIA_UNIFICADA.md.
+
 ## Resultado actual
 
 Los fallos reproducidos en el alcance auditado quedaron corregidos. POST /leads

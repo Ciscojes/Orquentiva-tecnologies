@@ -4,6 +4,7 @@ No utiliza .env ni conecta con el servidor PostgreSQL habitual del proyecto.
 Requiere los binarios locales de PostgreSQL (initdb y pg_ctl).
 """
 import argparse
+from contextlib import closing
 import os
 from pathlib import Path
 import shutil
@@ -11,6 +12,8 @@ import socket
 import subprocess
 import sys
 import tempfile
+import sqlite3
+from concurrent.futures import ThreadPoolExecutor
 
 
 def main():
@@ -60,7 +63,7 @@ def main():
             from sqlalchemy import select
             from app.database import engine, SessionLocal
             from app.main import app
-            from app.models import Base, Lead
+            from app.models import Appointment, Base, Lead
             from seed import seed_database
 
             config = Config(str(root / "alembic.ini"))
@@ -75,6 +78,50 @@ def main():
                     response = client.get("/business/me", headers={"X-API-Key": key})
                     assert response.status_code == 200 and response.json()["id"] == business
                 print("OK: empresas demo y seed repetible")
+                alfa = {"X-API-Key": "demo-barberia-alfa"}
+                beta = {"X-API-Key": "demo-barberia-beta"}
+                assert client.get("/services", headers=alfa).json()[0]["name"] == "Corte clásico"
+                assert client.get("/services", headers=beta).json()[0]["name"] == "Corte premium"
+                def book(stamp, headers=alfa):
+                    return client.post("/appointments", headers=headers,
+                        json={"customer_name": "QA PostgreSQL", "starts_at": stamp})
+                with ThreadPoolExecutor(max_workers=2) as pool:
+                    responses = list(pool.map(lambda stamp: book(stamp).status_code,
+                        ["2032-01-01T12:00:00-06:00", "2032-01-01T18:00:00Z"]))
+                assert sorted(responses) == [201, 409]
+                assert client.get("/appointments", headers=beta).json() == []
+                assert book("2032-01-01T18:00:00Z", beta).status_code == 201
+                for stamp in ["2032-01-01T18:00:00.000001Z", "2032-01-01T18:00:00.000002Z"]:
+                    assert book(stamp).status_code == 201
+                rows = client.get("/appointments", headers=alfa).json()
+                assert len(rows) == 3
+                assert rows[0]["starts_at"] == "2032-01-01T18:00:00+00:00"
+                assert rows[-1]["starts_at"] == "2032-01-01T18:00:00.000002+00:00"
+                with SessionLocal() as session:
+                    appointments = session.scalars(select(Appointment)).all()
+                    assert len(appointments) == 4
+                    assert all(row.starts_at.utcoffset() is not None for row in appointments)
+                assert book("2032-01-01T18:00:00").status_code == 422
+                assert client.post("/appointments", headers=alfa,
+                    json={"customer_name": "   ", "starts_at": "2033-01-01T18:00:00Z"}).status_code == 422
+                assert not (path / "demo.sqlite3").exists()
+                print("OK: servicios y reservas PostgreSQL, concurrencia, aislamiento, UTC y microsegundos")
+                from scripts.import_legacy_sqlite import transfer
+                legacy = path / "legacy.sqlite3"
+                with closing(sqlite3.connect(legacy)) as connection, connection:
+                    connection.executescript("""
+                        CREATE TABLE businesses (id TEXT, name TEXT);
+                        CREATE TABLE services (business_id TEXT, name TEXT, price_crc INTEGER);
+                        CREATE TABLE appointments (business_id TEXT, customer_name TEXT, starts_at TEXT);
+                        INSERT INTO businesses VALUES ('alfa', 'Barbería Alfa');
+                        INSERT INTO services VALUES ('alfa', 'Corte clásico', 5000);
+                        INSERT INTO appointments VALUES ('alfa', 'QA Histórico', '2034-01-01T12:00:00-06:00');
+                    """)
+                assert transfer(legacy, SessionLocal)["appointments"] == 1
+                assert transfer(legacy, SessionLocal, apply=True)["appointments"] == 1
+                assert transfer(legacy, SessionLocal, apply=True)["appointments"] == 0
+                assert len(client.get("/appointments", headers=alfa).json()) == 4
+                print("OK: simulación y traslado histórico idempotente en PostgreSQL temporal")
                 payload = {"name": "QA PostgreSQL", "email": "qa@example.com", "service": "agents", "message": "Solicitud ficticia de integración."}
                 response = client.post("/leads", json=payload)
                 assert response.status_code == 201 and response.json() == {"status": "created"}
