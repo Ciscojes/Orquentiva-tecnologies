@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.auth import current_business
 from app.routes.auth import router as auth_router
+from app.routes.admin import router as admin_router
 from app.database import get_db
 from app.models import Appointment, Business, Service
 from app.routes.leads import router as leads_router
@@ -20,11 +21,12 @@ from app.routes.leads import router as leads_router
 app = FastAPI(title="ORQENTIVA AI", version="0.1.0", description="API educativa multiempresa")
 app.include_router(leads_router)
 app.include_router(auth_router)
+app.include_router(admin_router)
 
 
 @app.exception_handler(RequestValidationError)
 async def validation_error(request, exc):
-    if request.url.path == "/leads" or request.url.path.startswith("/auth/"):
+    if request.url.path == "/leads" or request.url.path.startswith(("/auth/", "/admin/")):
         return JSONResponse(status_code=422, content={"detail": "Datos inválidos"})
     return await request_validation_exception_handler(request, exc)
 
@@ -37,7 +39,7 @@ async def database_error(request, exc):
 @app.middleware("http")
 async def private_cache_policy(request, call_next):
     response = await call_next(request)
-    if request.url.path.startswith(("/auth/", "/business/", "/services", "/appointments")):
+    if request.url.path.startswith(("/auth/", "/admin/", "/business/", "/services", "/appointments")):
         response.headers["Cache-Control"] = "no-store"
     return response
 

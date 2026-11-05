@@ -9,8 +9,8 @@ ni contraseñas en localStorage. Sesión absoluta de 8 horas.
 
 Las claves X-API-Key demo ya no autorizan peticiones. Servicios y reservas requieren
 una cuenta business_admin. Un super_admin no puede usar esa cuenta para operar
-como un cliente. La dependencia require_super_admin queda preparada para SPEC-008.
-Los paneles, registro público, recuperación de contraseña y MFA todavía no existen.
+como un cliente. La dependencia require_super_admin protege el panel administrativo de SPEC-008.
+El panel de cliente, registro público, recuperación de contraseña y MFA todavía no existen.
 
 ## Preparar desarrollo habitual (pasos explícitos, no automáticos)
 
@@ -92,3 +92,5 @@ Desde la raíz, ejecutar en dos terminales:
 
 La migración de desarrollo ya se aplicó el 2026-11-04 con respaldo y comprobación
 de datos existentes. La creación de cuentas continúa siendo explícita.
+
+SPEC-008: desactivar un negocio revoca las sesiones de sus usuarios y bloquea nuevos logins. Reactivarlo requiere iniciar sesión de nuevo.

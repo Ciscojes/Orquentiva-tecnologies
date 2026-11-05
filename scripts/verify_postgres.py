@@ -70,8 +70,11 @@ def main():
 
             config = Config(str(root / "alembic.ini"))
             command.upgrade(config, "d8f25b602d7b")
-            seed_database()
             from sqlalchemy import text as sql_text
+            # Preparar datos del esquema anterior sin usar modelos que requieren columnas nuevas.
+            with engine.begin() as connection:
+                connection.execute(sql_text("INSERT INTO businesses (id, name) VALUES ('alfa', 'Barbería Alfa'), ('beta', 'Barbería Beta')"))
+                connection.execute(sql_text("INSERT INTO services (business_id, name, price_crc) VALUES ('alfa', 'Corte clásico', 5000), ('beta', 'Corte premium', 8500)"))
             with engine.connect() as connection:
                 before_services = connection.execute(sql_text("SELECT id, business_id, name, price_crc FROM services ORDER BY id")).all()
             command.upgrade(config, "head")
@@ -111,6 +114,25 @@ def main():
                 assert client.get("/services", headers={"X-API-Key": "demo-barberia-alfa"}).status_code == 401
                 assert client.get("/appointments", headers=credentials["admin"]).status_code == 403
                 print("OK: migración conserva datos, cuentas Argon2 y sesiones PostgreSQL por rol")
+                admin = credentials["admin"]
+                assert len(client.get("/admin/businesses", headers=admin).json()) == 2
+                assert all(row["is_active"] for row in client.get("/admin/businesses", headers=admin).json())
+                assert client.get("/admin/businesses", headers=alfa).status_code == 403
+                assert client.post("/admin/businesses", headers=admin, json={"id":"gamma","name":"Gamma QA"}).status_code == 201
+                assert client.post("/admin/businesses", headers=admin, json={"id":"gamma","name":"Otro"}).status_code == 409
+                assert client.post("/admin/businesses/gamma/users", headers=admin,
+                    json={"email":"gamma@example.com","password":password}).status_code == 201
+                assert client.patch("/admin/businesses/gamma", headers=admin, json={"is_active":False}).status_code == 200
+                assert client.post("/auth/login",headers={"Origin":"http://testserver"},
+                    json={"email":"gamma@example.com","password":password}).status_code == 401
+                assert client.patch("/admin/businesses/gamma", headers=admin, json={"is_active":True}).status_code == 200
+                assert client.post("/auth/login",headers={"Origin":"http://testserver"},
+                    json={"email":"gamma@example.com","password":password}).status_code == 200
+                gamma_token = client.cookies[COOKIE_NAME]
+                client.cookies.clear()
+                assert client.patch("/admin/businesses/gamma", headers=admin, json={"is_active":False}).status_code == 200
+                assert client.get("/auth/me",headers={"Cookie":f"{COOKIE_NAME}={gamma_token}"}).status_code == 401
+                print("OK: panel administrativo PostgreSQL, creación, permisos y revocación al desactivar")
                 assert client.get("/services", headers=alfa).json()[0]["name"] == "Corte clásico"
                 assert client.get("/services", headers=beta).json()[0]["name"] == "Corte premium"
                 def book(stamp, headers=alfa):

@@ -7,7 +7,5 @@
 - [x] Verificar regresiones, seguridad y PostgreSQL temporal.
 - [x] Verificar flujo en navegador aislado y documentar resultados.
 - [x] Aplicar migración e713a007c001 en desarrollo habitual, con respaldo y datos existentes verificados.
-- [ ] Crear cuentas con contraseña elegida por el usuario en terminal.
-- [ ] Revisar y registrar commit manualmente.
-
-
+- [x] Cuenta de administrador creada por el usuario; login confirmado en desarrollo.
+- [x] Commit manual e825124 verificado en Git.

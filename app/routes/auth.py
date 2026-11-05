@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.auth import (COOKIE_NAME, SESSION_SECONDS, current_user, new_session,
                       secure_cookie, token_digest, user_view, verify_origin, verify_password)
 from app.database import get_db
-from app.models import AuthSession, User
+from app.models import AuthSession, Business, User
 from app.routes.leads import LeadLimiter
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -35,6 +35,10 @@ def login(payload: LoginIn, request: Request, response: Response,
     valid = verify_password(payload.password, user.password_hash if user else None)
     if not valid or user is None or not user.is_active:
         raise HTTPException(401, "Correo o contraseña incorrectos")
+    if user.role == "business_admin":
+        business = session.scalar(select(Business).where(Business.id == user.business_id).with_for_update())
+        if business is None or not business.is_active:
+            raise HTTPException(401, "Correo o contraseña incorrectos")
     previous = request.cookies.get(COOKIE_NAME)
     if previous:
         session.execute(delete(AuthSession).where(AuthSession.token_hash == token_digest(previous)))

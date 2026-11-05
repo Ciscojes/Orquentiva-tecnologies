@@ -64,6 +64,10 @@ def current_user(request: Request, session: Annotated[Session, Depends(get_db)])
     user = session.get(User, row.user_id)
     if expires <= datetime.now(timezone.utc) or user is None or not user.is_active:
         raise HTTPException(401, "Se requiere una sesión válida")
+    if user.role == "business_admin":
+        business = session.get(Business, user.business_id)
+        if business is None or not business.is_active:
+            raise HTTPException(403, "Empresa no disponible")
     if request.method not in {"GET", "HEAD", "OPTIONS"}:
         verify_origin(request)
     return user

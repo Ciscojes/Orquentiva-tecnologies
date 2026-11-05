@@ -1,4 +1,4 @@
-# ORQENTIVA AI — MVP TFM con autenticación (SPEC-007)
+# ORQENTIVA AI — MVP TFM con panel administrativo (SPEC-008)
 
 ## Captación de leads
 
@@ -92,8 +92,8 @@ Ver [Autenticación](docs/AUTENTICACION.md) para migrar explícitamente la base 
 desarrollo, crear cuentas sin exponer contraseñas y configurar el origen local.
 La página corporativa, servicios comerciales ES/EN y POST /leads siguen públicos.
 
-El acceso muestra la identidad y el rol. Los dashboards, LangGraph y RAG están
-pendientes; consultar [Alcance del MVP del TFM](docs/MVP_TFM.md).
+El acceso de Super Admin incluye gestión de negocios, estado y creación de cuentas.
+Ver [Panel administrativo](docs/PANEL_ADMINISTRADOR.md). El panel de cliente, LangGraph y RAG están pendientes; consultar [Alcance del MVP del TFM](docs/MVP_TFM.md).
 
 Las lecciones anteriores que usen claves demo describen versiones históricas.
 El contrato actual de autenticación es SPEC-007.

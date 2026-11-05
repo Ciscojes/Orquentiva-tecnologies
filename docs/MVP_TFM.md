@@ -10,8 +10,8 @@ Se conserva la estructura del repositorio y la web corporativa; no se crea otro 
 | 004 | Captación de leads | Commit 184dac2 |
 | 005 | Persistencia PostgreSQL unificada | Commit 91168cf |
 | 006 | Servicios comerciales claros ES/EN | Commit 77bf6bb |
-| 007 | Login, roles, sesiones, acceso ES/EN | Implementada y probada en entornos aislados; activación local y commit pendientes |
-| 008 | Panel de administrador: listar, crear y activar negocios; asignar usuarios | Pendiente |
+| 007 | Login, roles, sesiones, acceso ES/EN | Activada localmente; commit e825124 |
+| 008 | Panel de administrador: listar, crear y activar negocios; asignar usuarios | Implementado, probado y activado localmente; commit pendiente |
 | 009 | Panel de cliente: servicios, duración, reservas y horarios | Pendiente |
 | 010 | LangGraph: consultar servicios/disponibilidad y crear reservas con confirmación | Pendiente |
 | 011 | RAG básico con documentos separados por empresa y referencias | Pendiente |
@@ -37,4 +37,3 @@ fuente en GitHub, slides y vídeo explicativo con captura de pantalla. Despliegu
 recomendado si es viable. Incluir enlaces y cuentas exclusivamente de demostración
 cuando estén preparados. No publicar contraseñas reales ni inventar resultados.
 No se ha enviado la entrega ni compartido acceso con terceros.
-

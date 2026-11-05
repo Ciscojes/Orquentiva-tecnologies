@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import AdminDashboard from "./AdminDashboard";
 import type { Language } from "../services";
 
 type Account = { id: number; email: string; role: "super_admin" | "business_admin"; business_id: string | null };
@@ -44,6 +45,7 @@ export default function AccessPanel({ language }: { language: Language }) {
   const [notice, setNotice] = useState<Notice>(null);
   const sequence = useRef(0);
   const welcome = useRef<HTMLHeadingElement>(null);
+  const endSession = useCallback(() => { setAccount(null); setNotice("blocked"); }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -105,14 +107,14 @@ export default function AccessPanel({ language }: { language: Language }) {
   return <section className="access-section" id="access" aria-labelledby="access-title">
     <h2 id="access-title">{t.title}</h2><p>{t.intro}</p>
     {checking ? <p role="status">{t.checking}</p> : account ?
-      <div className="access-card" aria-busy={busy}>
+      <><div className="access-card" aria-busy={busy}>
         <h3 ref={welcome} tabIndex={-1}>{t.welcome}</h3>
         <p>{account.email}</p><p><strong>{account.role === "super_admin" ? t.admin : t.business}</strong></p>
         {account.business_id && <p>{t.company}: {account.business_id}</p>}
-        <p>{t.next}</p>
+        {account.role === "business_admin" && <p>{t.next}</p>}
         <button className="btn btn-primary" onClick={logout} disabled={busy}>{busy ? t.busy : t.logout}</button>
         <button className="access-retry" onClick={refreshSession} disabled={busy}>{t.retry}</button>
-      </div> :
+      </div>{account.role === "super_admin" && <AdminDashboard key={account.id} language={language} onSessionEnded={endSession} />}</> :
       <form className="contact-form" onSubmit={login} aria-busy={busy}>
         <label htmlFor="login-email">{t.email}</label>
         <input id="login-email" type="email" autoComplete="username" required maxLength={254} value={email} onChange={e => setEmail(e.target.value)} disabled={busy} />

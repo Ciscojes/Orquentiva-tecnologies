@@ -16,6 +16,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     func,
+    true,
 )
 
 
@@ -35,6 +36,8 @@ class Business(Base):
         String(150),
         nullable=False,
     )
+
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default=true(), nullable=False)
 
 
 class Service(Base):
