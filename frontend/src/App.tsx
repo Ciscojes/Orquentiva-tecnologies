@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import "./App.css";
 import ContactForm from "./components/ContactForm";
-
-// Idiomas disponibles en ORQENTIVA
-type Language = "es" | "en";
+import ServiceCards from "./components/ServiceCards";
+import type { Language } from "./services";
 
 // Traducciones de toda la página
 const translations = {
@@ -17,39 +16,17 @@ const translations = {
     title: "Inteligencia que impulsa negocios.",
 
     description:
-      "Transformamos empresas mediante agentes de IA, automatización inteligente y plataformas digitales diseñadas para crecer.",
+      "Diseñamos soluciones para atender mejor a tus clientes, simplificar tareas y organizar tu negocio. Empezamos por entender lo que necesitas.",
 
     explore: "Explorar servicios",
     contact: "Solicitar asesoría",
 
     solutionsLabel: "SOLUCIONES ORQENTIVA",
-    servicesTitle: "Nuestras soluciones",
+    servicesTitle: "Tecnología al servicio de tu negocio",
 
     servicesDescription:
-      "Integramos inteligencia artificial, ingeniería de software y estrategia comercial.",
+      "Conoce qué puede aportar cada servicio. Evaluamos tu caso y acordamos el alcance, las integraciones y los costes antes de implementar.",
 
-    services: [
-      {
-        name: "Agentes de IA",
-        description:
-          "Asistentes inteligentes que atienden consultas y ejecutan tareas empresariales.",
-      },
-      {
-        name: "Automatización",
-        description:
-          "Conectamos aplicaciones y automatizamos operaciones repetitivas.",
-      },
-      {
-        name: "Growth Partner",
-        description:
-          "Utilizamos tecnología y análisis de datos para impulsar el crecimiento comercial.",
-      },
-      {
-        name: "Plataformas SaaS",
-        description:
-          "Desarrollamos soluciones empresariales escalables y personalizadas.",
-      },
-    ],
 
     aboutLabel: "SOBRE ORQENTIVA",
     aboutTitle: "Innovación con propósito",
@@ -75,38 +52,17 @@ const translations = {
     title: "Intelligence that drives business growth.",
 
     description:
-      "We transform businesses through AI agents, intelligent automation, and digital platforms built for growth.",
+      "We design solutions to serve your customers, simplify tasks and organize your business. We start by understanding what you need.",
 
     explore: "Explore services",
     contact: "Request a consultation",
 
     solutionsLabel: "ORQENTIVA SOLUTIONS",
-    servicesTitle: "Our solutions",
+    servicesTitle: "Technology that serves your business",
 
     servicesDescription:
-      "We combine artificial intelligence, software engineering, and business strategy.",
+      "Explore what each service can offer. We assess your needs and agree on scope, integrations and costs before implementation.",
 
-    services: [
-      {
-        name: "AI Agents",
-        description:
-          "Intelligent assistants that handle inquiries and perform business tasks.",
-      },
-      {
-        name: "Automation",
-        description:
-          "We connect applications and automate repetitive operations.",
-      },
-      {
-        name: "Growth Partner",
-        description:
-          "We use technology and data analysis to support business growth.",
-      },
-      {
-        name: "SaaS Platforms",
-        description: "We develop scalable and customized business software.",
-      },
-    ],
 
     aboutLabel: "ABOUT ORQENTIVA",
     aboutTitle: "Purpose-driven innovation",
@@ -121,9 +77,6 @@ const translations = {
     footer: "All rights reserved.",
   },
 };
-
-// Iconos representativos de cada servicio
-const serviceIcons = ["✦", "⚡", "↗", "◈"];
 
 // Identificadores de las secciones
 const anchors = ["home", "services", "solutions", "about", "contact"];
@@ -246,17 +199,7 @@ function App() {
             <p>{t.servicesDescription}</p>
           </div>
 
-          <div className="services-grid">
-            {t.services.map((service, index) => (
-              <article className="service-card" key={service.name}>
-                <div className="service-icon">{serviceIcons[index]}</div>
-
-                <h3>{service.name}</h3>
-
-                <p>{service.description}</p>
-              </article>
-            ))}
-          </div>
+          <ServiceCards language={language} />
         </section>
 
         {/* SOBRE NOSOTROS */}

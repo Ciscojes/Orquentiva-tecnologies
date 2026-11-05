@@ -1,11 +1,12 @@
 import { useState, type FormEvent } from "react";
 
-type Props = { language: "es" | "en" };
+import { services, type Language } from "../services";
+
+type Props = { language: Language };
 const translations = {
   es: {
     title: "Hablemos de tu proyecto", name: "Nombre completo", email: "Correo electrónico",
     company: "Empresa (opcional)", service: "Servicio de interés", message: "Cuéntanos sobre tu proyecto",
-    services: ["Agentes de IA", "Automatización", "Growth Partner", "Plataformas SaaS"],
     choose: "Selecciona un servicio", submit: "Enviar solicitud", sending: "Enviando…",
     success: "Recibimos tu solicitud. Gracias por contactarnos.",
     error: "No pudimos confirmar el envío. Comprueba tu conexión e inténtalo de nuevo.",
@@ -16,7 +17,6 @@ const translations = {
   en: {
     title: "Let's discuss your project", name: "Full name", email: "Email address",
     company: "Company (optional)", service: "Service of interest", message: "Tell us about your project",
-    services: ["AI Agents", "Automation", "Growth Partner", "SaaS Platforms"],
     choose: "Choose a service", submit: "Send request", sending: "Sending…",
     success: "We received your request. Thank you for contacting us.",
     error: "We could not confirm submission. Check your connection and try again.",
@@ -25,7 +25,6 @@ const translations = {
     privacy: "We will use your name, email and request details to respond to your business inquiry. Please avoid including sensitive information.",
   },
 };
-const serviceValues = ["agents", "automation", "growth", "saas"];
 const emptyForm = { name: "", email: "", company: "", service: "", message: "" };
 
 export default function ContactForm({ language }: Props) {
@@ -79,7 +78,7 @@ export default function ContactForm({ language }: Props) {
       <label htmlFor="contact-service">{t.service}</label>
       <select id="contact-service" required disabled={sending} value={form.service} onChange={e => update("service", e.target.value)}>
         <option value="">{t.choose}</option>
-        {serviceValues.map((value, index) => <option key={value} value={value}>{t.services[index]}</option>)}
+        {services[language].map(service => <option key={service.id} value={service.id}>{service.name}</option>)}
       </select>
       <label htmlFor="contact-message">{t.message}</label>
       <textarea id="contact-message" required minLength={10} maxLength={2000} rows={4}
