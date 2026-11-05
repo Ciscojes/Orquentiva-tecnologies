@@ -51,6 +51,8 @@ def main():
             run([pg_ctl, "-D", str(data), "-l", str(path / "postgres.log"), "-o", f"-h 127.0.0.1 -p {port}", "-w", "start"])
             started = True
             os.environ["DATABASE_URL"] = f"postgresql+psycopg://qa@127.0.0.1:{port}/postgres"
+            os.environ["AUTH_COOKIE_SECURE"] = "false"
+            os.environ["AUTH_ALLOWED_ORIGINS"] = "http://testserver"
             os.environ["ORQENTIVA_DB"] = str(path / "demo.sqlite3")
             root = Path(__file__).resolve().parents[1]
             sys.path.insert(0, str(root))
@@ -67,19 +69,48 @@ def main():
             from seed import seed_database
 
             config = Config(str(root / "alembic.ini"))
+            command.upgrade(config, "d8f25b602d7b")
+            seed_database()
+            from sqlalchemy import text as sql_text
+            with engine.connect() as connection:
+                before_services = connection.execute(sql_text("SELECT id, business_id, name, price_crc FROM services ORDER BY id")).all()
             command.upgrade(config, "head")
+            with engine.connect() as connection:
+                assert connection.execute(sql_text("SELECT id, business_id, name, price_crc FROM services ORDER BY id")).all() == before_services
             with engine.connect() as connection:
                 assert compare_metadata(MigrationContext.configure(connection), Base.metadata) == []
             print("OK: migraciones PostgreSQL y modelos coinciden")
             seed_database()
             seed_database()
+            from app.auth import UserCreate, create_user, COOKIE_NAME, token_digest
+            from app.models import AuthSession
+            import secrets
+            password = secrets.token_urlsafe(24)
+            with SessionLocal.begin() as session:
+                for name in ["alfa", "beta", "admin"]:
+                    create_user(session, UserCreate(email=f"{name}@example.com", password=password,
+                        role="super_admin" if name == "admin" else "business_admin",
+                        business_id=None if name == "admin" else name))
             with TestClient(app) as client:
-                for key, business in [("demo-barberia-alfa", "alfa"), ("demo-barberia-beta", "beta")]:
-                    response = client.get("/business/me", headers={"X-API-Key": key})
-                    assert response.status_code == 200 and response.json()["id"] == business
-                print("OK: empresas demo y seed repetible")
-                alfa = {"X-API-Key": "demo-barberia-alfa"}
-                beta = {"X-API-Key": "demo-barberia-beta"}
+                credentials = {}
+                for name in ["alfa", "beta", "admin"]:
+                    client.cookies.clear()
+                    response = client.post("/auth/login", headers={"Origin": "http://testserver"},
+                        json={"email": f"{name}@example.com", "password": password})
+                    assert response.status_code == 200
+                    token = client.cookies[COOKIE_NAME]
+                    credentials[name] = {"Cookie": f"{COOKIE_NAME}={token}", "Origin": "http://testserver"}
+                    with SessionLocal() as session:
+                        row = session.get(AuthSession, token_digest(token))
+                        assert row is not None and row.expires_at.utcoffset() is not None
+                    if name != "admin":
+                        response = client.get("/business/me")
+                        assert response.status_code == 200 and response.json()["id"] == name
+                client.cookies.clear()
+                alfa, beta = credentials["alfa"], credentials["beta"]
+                assert client.get("/services", headers={"X-API-Key": "demo-barberia-alfa"}).status_code == 401
+                assert client.get("/appointments", headers=credentials["admin"]).status_code == 403
+                print("OK: migración conserva datos, cuentas Argon2 y sesiones PostgreSQL por rol")
                 assert client.get("/services", headers=alfa).json()[0]["name"] == "Corte clásico"
                 assert client.get("/services", headers=beta).json()[0]["name"] == "Corte premium"
                 def book(stamp, headers=alfa):
@@ -139,6 +170,14 @@ def main():
                 with SessionLocal() as session:
                     assert len(session.scalars(select(Lead)).all()) == 5
                 print("OK: límite de envíos sin filas adicionales")
+                assert client.post("/auth/logout", headers=alfa).status_code == 204
+                assert client.get("/auth/me", headers=alfa).status_code == 401
+                assert client.get("/auth/me", headers=beta).status_code == 200
+                print("OK: logout revoca una sesión sin afectar al otro negocio")
+            command.downgrade(config, "d8f25b602d7b")
+            with engine.connect() as connection:
+                assert connection.execute(sql_text("SELECT id, business_id, name, price_crc FROM services ORDER BY id")).all() == before_services
+            command.upgrade(config, "head")
             command.downgrade(config, "base")
             print("OK: downgrade PostgreSQL completo")
         finally:

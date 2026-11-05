@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import "./App.css";
 import ContactForm from "./components/ContactForm";
+import AccessPanel from "./components/AccessPanel";
 import ServiceCards from "./components/ServiceCards";
 import type { Language } from "./services";
 
 // Traducciones de toda la página
 const translations = {
   es: {
-    navigation: ["Inicio", "Servicios", "Soluciones", "Nosotros", "Contacto"],
+    navigation: ["Inicio", "Servicios", "Soluciones", "Nosotros", "Contacto", "Acceso"],
 
     navLabel: "Navegación principal",
     homeLabel: "Inicio de ORQENTIVA",
@@ -43,7 +44,7 @@ const translations = {
   },
 
   en: {
-    navigation: ["Home", "Services", "Solutions", "About", "Contact"],
+    navigation: ["Home", "Services", "Solutions", "About", "Contact", "Sign in"],
 
     navLabel: "Main navigation",
     homeLabel: "ORQENTIVA Home",
@@ -79,7 +80,7 @@ const translations = {
 };
 
 // Identificadores de las secciones
-const anchors = ["home", "services", "solutions", "about", "contact"];
+const anchors = ["home", "services", "solutions", "about", "contact", "access"];
 
 function App() {
   const [year] = useState(() => new Date().getFullYear());
@@ -219,6 +220,7 @@ function App() {
 
           <ContactForm language={language} />
         </section>
+        <AccessPanel language={language} />
       </main>
 
       {/* PIE DE PÁGINA */}

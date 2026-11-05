@@ -513,3 +513,14 @@ section, #solutions { scroll-margin-top: 24px; }
   .contact-form input, .contact-form select, .contact-form textarea, .contact-form button { transition: none; }
   .contact-form button:hover { transform: none; }
 }
+
+/* SPEC-007: acceso a la plataforma */
+.access-section { padding: 70px 6%; background: #eaf2f7; text-align: center; }
+.access-section > p { max-width: 600px; margin: 18px auto; line-height: 1.7; }
+.access-card { max-width: 520px; margin: 28px auto; padding: 30px; border-radius: 18px; background: white; text-align: left; overflow-wrap: anywhere; }
+.access-card p, .access-section .contact-form p { line-height: 1.7; }
+.access-card button { border: 0; min-height: 44px; }
+.access-retry { display: block; margin-top: 16px; background: transparent; color: #10253d; text-decoration: underline; }
+.access-card button:disabled { opacity: .6; cursor: wait; }
+.access-error { color: #a52222; }
+.access-success { color: #166149; }

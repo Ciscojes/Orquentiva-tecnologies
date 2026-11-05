@@ -9,4 +9,4 @@
 - [x] Preparar y probar simulación y traslado explícito de datos históricos.
 - [x] Verificar dependencias y documentación.
 - [x] Aplicar traslado de datos históricos de desarrollo, autorizado por el usuario: una reserva, cero conflictos y cero pendientes.
-- [ ] Revisar cambios y registrar commit manualmente.
+- [x] Revisar cambios y registrar commit manualmente: 91168cf, verificado en Git.

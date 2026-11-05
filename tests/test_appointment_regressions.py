@@ -5,8 +5,8 @@ from datetime import datetime, timezone
 import pytest
 from app.models import Appointment
 
-ALFA = {"X-API-Key": "demo-barberia-alfa"}
-BETA = {"X-API-Key": "demo-barberia-beta"}
+ALFA = {"Cookie": "orqentiva_session=test-alfa", "Origin": "http://testserver"}
+BETA = {"Cookie": "orqentiva_session=test-beta", "Origin": "http://testserver"}
 
 
 def book(client, stamp, name="Cliente Demo", headers=None):

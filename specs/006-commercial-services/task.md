@@ -6,5 +6,5 @@
 - [x] Conservar formulario y contrato POST /leads.
 - [x] Verificar build, lint y pruebas aisladas.
 - [x] Comprobar recorrido ES/EN y móvil.
-- [ ] Revisar cambios y registrar commit manualmente.
+- [x] Revisar cambios y registrar commit manualmente: 77bf6bb, verificado en Git.
 

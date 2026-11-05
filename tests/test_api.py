@@ -1,5 +1,5 @@
-ALFA = {"X-API-Key": "demo-barberia-alfa"}
-BETA = {"X-API-Key": "demo-barberia-beta"}
+ALFA = {"Cookie": "orqentiva_session=test-alfa", "Origin": "http://testserver"}
+BETA = {"Cookie": "orqentiva_session=test-beta", "Origin": "http://testserver"}
 
 
 def test_health(client):

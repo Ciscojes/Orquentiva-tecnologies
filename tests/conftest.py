@@ -38,10 +38,22 @@ def session_factory(tmp_path):
 
 
 @pytest.fixture
-def client(session_factory):
+def client(session_factory, test_password_hash):
     from fastapi.testclient import TestClient
     from app.database import get_db
     from app.main import app
+    from app.models import User, AuthSession
+    from app.auth import token_digest
+    from datetime import datetime, timezone, timedelta
+    with session_factory.begin() as session:
+        for name in ["alfa", "beta", "admin"]:
+            user = User(email=f"{name}@example.com", password_hash=test_password_hash,
+                        role="super_admin" if name == "admin" else "business_admin",
+                        business_id=None if name == "admin" else name)
+            session.add(user)
+            session.flush()
+            session.add(AuthSession(token_hash=token_digest(f"test-{name}"), user_id=user.id,
+                                    expires_at=datetime.now(timezone.utc) + timedelta(hours=1)))
     def override_db():
         with session_factory() as session:
             yield session
@@ -51,3 +63,19 @@ def client(session_factory):
             yield client
     finally:
         app.dependency_overrides.pop(get_db, None)
+
+
+@pytest.fixture(scope="session")
+def test_password_hash():
+    from app.auth import password_hasher
+    return password_hasher.hash("Only-for-tests-123!")
+
+
+@pytest.fixture(autouse=True)
+def isolated_auth_config(monkeypatch):
+    from app.routes.auth import login_limiter
+    monkeypatch.setenv("AUTH_COOKIE_SECURE", "false")
+    monkeypatch.setenv("AUTH_ALLOWED_ORIGINS", "http://testserver")
+    login_limiter.buckets.clear()
+    yield
+    login_limiter.buckets.clear()

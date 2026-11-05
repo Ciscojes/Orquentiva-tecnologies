@@ -7,6 +7,8 @@ from sqlalchemy.orm import (
     mapped_column,
 )
 from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
     DateTime,
     ForeignKey,
     Integer,
@@ -135,3 +137,29 @@ class Lead(Base):
         server_default=func.now(),
         nullable=False,
     )
+
+
+class User(Base):
+    __tablename__ = "users"
+    __table_args__ = (
+        CheckConstraint(
+            "(role = 'super_admin' AND business_id IS NULL) OR "
+            "(role = 'business_admin' AND business_id IS NOT NULL)",
+            name="ck_user_role_business",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    email: Mapped[str] = mapped_column(String(254), unique=True, nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    role: Mapped[str] = mapped_column(String(30), nullable=False)
+    business_id: Mapped[str | None] = mapped_column(ForeignKey("businesses.id"), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+
+class AuthSession(Base):
+    __tablename__ = "auth_sessions"
+
+    token_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True, nullable=False)

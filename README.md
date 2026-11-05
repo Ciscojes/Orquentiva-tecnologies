@@ -1,4 +1,4 @@
-# ORQENTIVA AI — Persistencia unificada (SPEC-005)
+# ORQENTIVA AI — MVP TFM con autenticación (SPEC-007)
 
 ## Captación de leads
 
@@ -8,7 +8,7 @@ No requiere claves de las empresas ni ofrece listado público.
 Devuelve HTTP 201 al guardar; 422 ante datos inválidos; 429 ante exceso de envíos;
 503 si no puede guardar. El formulario React permite enviar en español e inglés.
 
-Para el desarrollo, ejecutar la API en `127.0.0.1:8000` y, desde `frontend`,
+Para el desarrollo, ejecutar la API en `127.0.0.1:8001` y, desde `frontend`,
 `npm install` y `npm run dev`. Vite reenvía `/leads` a la API.
 En producción debe configurarse una ruta del mismo origen hacia el backend;
 `vite preview` no sustituye esa configuración.
@@ -59,7 +59,7 @@ Prototipo educativo del TFM y futuro SaaS de ORQENTIVA Technologies.
 - Aislamiento por empresa en las consultas.
 - Pruebas automatizadas.
 
-> Seguridad: las API keys incluidas son **solo ejemplos**, están en el código para simplificar el aprendizaje. **NO exponer este servidor a Internet**. Falta autenticación real, autorización por roles, cifrado y auditoría.
+> SPEC-007 sustituye las claves demo por cuentas y sesiones revocables. La publicación pública sigue pendiente de configuración HTTPS, revisión del proxy y límites de uso. Ver [Autenticación](docs/AUTENTICACION.md).
 
 ## Cómo ejecutarlo (Windows PowerShell)
 ```powershell
@@ -75,25 +75,25 @@ el esquema y los datos demo antes de iniciar la API:
 ```powershell
 python -m alembic upgrade head
 python seed.py
-python -m uvicorn app.main:app --reload
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8001
 ```
-Abrir http://127.0.0.1:8000/docs
+Abrir http://127.0.0.1:8001/docs
 
-Para probar `/services`, en el encabezado `X-API-Key` utiliza `demo-barberia-alfa` o `demo-barberia-beta`. La documentación interactiva solicita el encabezado al probar los endpoints.
+Para probar recursos privados, crea una cuenta e inicia sesión siguiendo [Autenticación](docs/AUTENTICACION.md). Las antiguas claves `X-API-Key` ya no conceden acceso.
 
 ## Tests
 ```powershell
 python -m pytest -q
 ```
 
-## Primer experimento
-1. Ejecuta `GET /services` con `demo-barberia-alfa`.
-2. Repite con `demo-barberia-beta`.
-3. Crea una cita usando `POST /appointments` con el cuerpo:
-```json
-{"customer_name":"Ana Demo","starts_at":"2030-11-02T15:00:00-06:00"}
-```
-4. Consulta `GET /appointments` con cada clave y explica por qué no ven los mismos datos.
-5. Repite la reserva a la misma hora y observa el error HTTP 409.
+## Acceso y siguiente incremento
 
-Consulta `docs/LECCION_01.md` y `docs/PROJECT_CHARTER.md`.
+Ver [Autenticación](docs/AUTENTICACION.md) para migrar explícitamente la base de
+desarrollo, crear cuentas sin exponer contraseñas y configurar el origen local.
+La página corporativa, servicios comerciales ES/EN y POST /leads siguen públicos.
+
+El acceso muestra la identidad y el rol. Los dashboards, LangGraph y RAG están
+pendientes; consultar [Alcance del MVP del TFM](docs/MVP_TFM.md).
+
+Las lecciones anteriores que usen claves demo describen versiones históricas.
+El contrato actual de autenticación es SPEC-007.
