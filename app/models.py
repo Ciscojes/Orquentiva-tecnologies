@@ -7,7 +7,7 @@ from sqlalchemy.orm import (
     mapped_column,
 )
 from sqlalchemy import (
-    Boolean,
+    Boolean, JSON, Index, text,
     CheckConstraint,
     DateTime,
     ForeignKey,
@@ -38,6 +38,18 @@ class Business(Base):
     )
 
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default=true(), nullable=False)
+
+
+    booking_enabled: Mapped[bool] = mapped_column(Boolean, server_default=true(), default=True)
+
+
+class Professional(Base):
+    __tablename__ = "professionals"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    business_id: Mapped[str] = mapped_column(ForeignKey("businesses.id"))
+    name: Mapped[str] = mapped_column(String(100))
+    service_ids: Mapped[list] = mapped_column(JSON)
+    days: Mapped[list] = mapped_column(JSON)
 
 
 class Service(Base):
@@ -72,11 +84,10 @@ class Appointment(Base):
     __tablename__ = "appointments"
 
     __table_args__ = (
-        UniqueConstraint(
-            "business_id",
-            "starts_at",
-            name="uq_appointment_business_time",
-        ),
+        UniqueConstraint("professional_id", "starts_at", name="uq_prof_time"),
+        UniqueConstraint("business_id", "request_key", name="uq_booking_request"),
+        Index("uq_legacy_time", "business_id", "starts_at", unique=True,
+              postgresql_where=text("professional_id IS NULL"), sqlite_where=text("professional_id IS NULL")),
     )
 
     id: Mapped[int] = mapped_column(
@@ -99,6 +110,12 @@ class Appointment(Base):
         nullable=False,
     )
 
+
+
+    professional_id: Mapped[int | None] = mapped_column(ForeignKey("professionals.id", name="fk_booking_prof"))
+    service_id: Mapped[int | None] = mapped_column(ForeignKey("services.id", name="fk_booking_service"))
+    ends_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    request_key: Mapped[str | None] = mapped_column(String(36))
 
 
 class Lead(Base):

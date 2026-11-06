@@ -66,3 +66,11 @@ guardar horario, recargar, cambiar idioma y comparar contra una cuenta de Beta.
 Resultados: specs/009-client-dashboard/verification.md.
 
 Navegación: usar «Acceso clientes» en la cabecera para iniciar sesión y «Mi panel» para volver al dashboard. En móvil, acceso e idioma permanecen visibles; los enlaces del sitio se agrupan en «Menú». El enlace #access anterior sigue funcionando.
+
+## Agenda por profesional
+
+Con la agenda habilitada, configura primero servicios con duración y horario de atención del negocio. En **Mi equipo**, registra a cada profesional con el nombre que deseas publicar, marca sus servicios y guarda sus días y horas. El enlace de reservas aparece debajo del equipo. Comparte ese enlace con tus clientes.
+
+El visitante elige servicio, fecha y profesional o «Cualquiera disponible». Al confirmar recibe el horario y el profesional asignado. Actualiza los datos del panel para ver la reserva. La tabla muestra una columna por profesional en escritorio y agrupa los nombres por turno en móvil. Las reservas antiguas sin asignación aparecen como «Sin asignar». Para evitar conflictos de duración desconocida, el sistema bloquea ese día en la disponibilidad pública.
+
+Los horarios se interpretan en Costa Rica. Se consultan fechas hasta 365 días por adelantado; los turnos se ofrecen cada cinco minutos dentro del intervalo disponible.

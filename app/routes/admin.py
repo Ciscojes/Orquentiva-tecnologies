@@ -18,6 +18,7 @@ Database = Annotated[Session, Depends(get_db)]
 class BusinessIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
     id: str = Field(min_length=1, max_length=50, pattern=r"^[a-z0-9][a-z0-9-]*$")
+    booking_enabled: StrictBool = True
     name: str = Field(min_length=1, max_length=150)
 
 
@@ -33,7 +34,7 @@ class BusinessUserIn(BaseModel):
 
 
 def business_view(business: Business):
-    return {"id": business.id, "name": business.name, "is_active": business.is_active}
+    return {"id": business.id, "name": business.name, "is_active": business.is_active, "booking_enabled": business.booking_enabled}
 
 
 def find_business(session: Session, business_id: str, *, lock=False):
@@ -70,6 +71,19 @@ def change_business_state(business_id: str, payload: BusinessState, session: Dat
     if not payload.is_active:
         users = select(User.id).where(User.business_id == business_id)
         session.execute(delete(AuthSession).where(AuthSession.user_id.in_(users)))
+    session.commit()
+    return business_view(business)
+
+
+class AgendaState(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    booking_enabled: StrictBool
+
+
+@router.put("/businesses/{business_id}/agenda")
+def set_agenda(business_id: str, payload: AgendaState, session: Database):
+    business = find_business(session, business_id, lock=True)
+    business.booking_enabled = payload.booking_enabled
     session.commit()
     return business_view(business)
 

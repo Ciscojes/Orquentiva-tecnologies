@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import type { Language } from "../services";
 
-type Business = { id: string; name: string; is_active: boolean };
+type Business = { id: string; name: string; is_active: boolean; booking_enabled: boolean };
 type BusinessUser = { id: number; email: string; is_active: boolean };
 type Props = { language: Language; onSessionEnded: () => void };
 const copy = {
@@ -68,6 +68,7 @@ function Feedback({ message, language }: {message: Message; language: Language})
 
 export default function AdminDashboard({ language, onSessionEnded }: Props) {
   const t = copy[language];
+  const [agenda,setAgenda]=useState(false);
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -97,9 +98,9 @@ export default function AdminDashboard({ language, onSessionEnded }: Props) {
     if (!name.trim()) { setMessage("invalid"); return; }
     setSaving(true); setMessage(null);
     try {
-      const business = await adminRequest("", {method:"POST", body:JSON.stringify({id:id.trim(), name:name.trim()})});
+      const business = await adminRequest("", {method:"POST", body:JSON.stringify({id:id.trim(), name:name.trim(), booking_enabled:agenda})});
       setBusinesses(previous => [...previous, business].sort((a,b) => a.name.localeCompare(b.name)));
-      setSelected(business.id); setId(""); setName(""); setMessage("businessCreated");
+      setAgenda(false); setSelected(business.id); setId(""); setName(""); setMessage("businessCreated");
     } catch (error) {
       if (sessionLost(error)) onSessionEnded();
       else setMessage(classify(error, "duplicateBusiness"));
@@ -121,6 +122,7 @@ export default function AdminDashboard({ language, onSessionEnded }: Props) {
         <section className="dashboard-card" aria-labelledby="business-create-title"><h4 id="business-create-title">{t.create}</h4>
           <form onSubmit={createBusiness} aria-busy={saving}><fieldset disabled={saving} className="dashboard-fields">
             <label htmlFor="business-id">{t.id}</label><input id="business-id" value={id} onChange={e=>setId(e.target.value)} required maxLength={50} pattern="[a-z0-9][a-z0-9\-]*" aria-describedby="business-id-help" autoCapitalize="none" autoComplete="off" />
+            <label><input type="checkbox" checked={agenda} onChange={e=>setAgenda(e.target.checked)}/> {language==="es"?"Incluir agenda de citas":"Include appointment scheduling"}</label>
             <small id="business-id-help">{t.idHelp}</small>
             <label htmlFor="business-name">{t.name}</label><input id="business-name" value={name} onChange={e=>setName(e.target.value)} required maxLength={150} autoComplete="organization" />
             <button className="btn btn-primary" type="submit">{saving ? t.saving : t.save}</button>
@@ -181,6 +183,13 @@ function BusinessManager({ business, language, onChange, onSessionEnded }: Props
   }
   return <section className="dashboard-card business-manager" aria-labelledby="business-manager-title" aria-busy={busy}>
     <h4 id="business-manager-title">{business.name}</h4>
+    <label><input type="checkbox" checked={business.booking_enabled} disabled={busy} onChange={async event=>{
+      const enabled=event.target.checked;
+      setBusy(true); setMessage(null);
+      try {onChange(await adminRequest(endpoint+"/agenda",{method:"PUT",body:JSON.stringify({booking_enabled:enabled})}));}
+      catch(error){if(sessionLost(error))onSessionEnded();else setMessage(classify(error));}
+      finally{setBusy(false);}
+    }}/> {language==="es"?"Agenda de citas habilitada":"Appointment scheduling enabled"}</label>
     <div className="business-access"><div><strong>{t.access}</strong><p>{t.status}: {business.is_active ? t.active : t.inactive}</p></div>
       <button type="button" disabled={busy} className={business.is_active ? "dashboard-danger" : "btn btn-primary"}
         onClick={() => business.is_active ? setConfirm(true) : changeState(true)}>{business.is_active ? t.disable : t.enable}</button></div>

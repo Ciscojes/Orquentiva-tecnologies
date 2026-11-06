@@ -24,11 +24,17 @@ app.include_router(leads_router)
 app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(client_router)
+from app.routes.team import router as team_router
+from app.scheduling import require_agenda
+from app.models import Professional
+from app.routes.public_booking import router as public_booking_router
+app.include_router(team_router)
+app.include_router(public_booking_router)
 
 
 @app.exception_handler(RequestValidationError)
 async def validation_error(request, exc):
-    if request.url.path == "/leads" or request.url.path.startswith(("/auth/", "/admin/", "/client/")):
+    if request.url.path == "/leads" or request.url.path.startswith(("/auth/", "/admin/", "/client/", "/book/")):
         return JSONResponse(status_code=422, content={"detail": "Datos inválidos"})
     return await request_validation_exception_handler(request, exc)
 
@@ -41,7 +47,7 @@ async def database_error(request, exc):
 @app.middleware("http")
 async def private_cache_policy(request, call_next):
     response = await call_next(request)
-    if request.url.path.startswith(("/auth/", "/admin/", "/client/", "/business/", "/services", "/appointments")):
+    if request.url.path.startswith(("/auth/", "/admin/", "/client/", "/book/", "/business/", "/services", "/appointments")):
         response.headers["Cache-Control"] = "no-store"
     return response
 
@@ -74,12 +80,14 @@ def my_business(business_id: Annotated[str, Depends(current_business)], session:
 
 @app.get("/services")
 def services(business_id: Annotated[str, Depends(current_business)], session: Annotated[Session, Depends(get_db)]):
+    require_agenda(session, business_id)
     rows = session.scalars(select(Service).where(Service.business_id == business_id).order_by(Service.id))
     return [{"id": row.id, "name": row.name, "price_crc": row.price_crc} for row in rows]
 
 
 @app.get("/appointments")
 def appointments(business_id: Annotated[str, Depends(current_business)], session: Annotated[Session, Depends(get_db)]):
+    require_agenda(session, business_id)
     rows = session.scalars(select(Appointment).where(Appointment.business_id == business_id)
                            .order_by(Appointment.starts_at, Appointment.id))
     return [{"id": row.id, "customer_name": row.customer_name, "starts_at": utc_iso(row.starts_at)} for row in rows]
@@ -90,8 +98,9 @@ def create_appointment(payload: AppointmentIn, business_id: Annotated[str, Depen
                        session: Annotated[Session, Depends(get_db)]):
     if payload.starts_at.tzinfo is None or payload.starts_at.utcoffset() is None:
         raise HTTPException(422, "Se requiere fecha con zona horaria (por ejemplo -06:00)")
-    if session.get(Business, business_id) is None:
-        raise HTTPException(404, "Empresa no encontrada")
+    require_agenda(session, business_id, lock=True)
+    if session.scalar(select(Professional.id).where(Professional.business_id == business_id).limit(1)) is not None:
+        raise HTTPException(409, "Confirma el servicio y profesional mediante la agenda")
     appointment = Appointment(business_id=business_id, customer_name=payload.customer_name,
                               starts_at=payload.starts_at.astimezone(timezone.utc))
     session.add(appointment)

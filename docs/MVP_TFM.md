@@ -12,8 +12,9 @@ Se conserva la estructura del repositorio y la web corporativa; no se crea otro 
 | 006 | Servicios comerciales claros ES/EN | Commit 77bf6bb |
 | 007 | Login, roles, sesiones, acceso ES/EN | Activada localmente; commit e825124 |
 | 008 | Panel de administrador: listar, crear y activar negocios; asignar usuarios | Commit 7a99ee0; activo localmente |
-| 009 | Panel de cliente: servicios, duración, consulta de reservas y horarios | Implementado, probado y activo localmente; commit pendiente |
-| 010 | LangGraph: consultar servicios/disponibilidad y crear reservas con confirmación | Pendiente |
+| 009 | Panel de cliente: servicios, duración, consulta de reservas y horarios | Implementado en d429249 |
+| 010a | Agenda por profesional y reservas por enlace | Implementado para validación local |
+| 010b | LangGraph: consultar servicios/disponibilidad y crear reservas con confirmación | Pendiente |
 | 011 | RAG básico con documentos separados por empresa y referencias | Pendiente |
 | 012 | Evaluación, documentación, slides y guion del vídeo | Pendiente |
 
@@ -25,7 +26,7 @@ No se anuncian login, paneles o IA como desplegados por haberlos especificado.
 - Super Admin administra negocios. Cada business_admin solo opera sobre su empresa.
 - El agente recibe la empresa del contexto autenticado, nunca de una instrucción del usuario o documento.
 - Debe pedir datos faltantes y confirmar la operación antes de reservar; solo comunica éxito tras confirmación del backend.
-- Antes de conectar el agente se definirán duración, disponibilidad, solapamientos e idempotencia; la duración del catálogo y el horario ya se configuran, pero la API de reservas sigue comprobando solo unicidad por instante.
+– La agenda por profesional verifica horarios, duración y solapamientos antes de confirmar. El agente será un canal posterior.
 - RAG filtra documentos por negocio y reconoce información insuficiente.
 - Objetivo de evaluación: 30 escenarios (10 informativos, 10 reservas, 10 adversos), con resultados reales, latencia y consumo observados.
 - WhatsApp, voz, pagos, suscripciones y n8n complejo quedan fuera del TFM.

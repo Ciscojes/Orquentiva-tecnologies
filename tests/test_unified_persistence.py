@@ -53,6 +53,7 @@ def test_startup_does_not_touch_legacy_sqlite(tmp_path, monkeypatch):
 
 def test_booking_database_failure_is_private(client):
     session = Mock()
+    session.scalar.side_effect = [Mock(booking_enabled=True), None]  # negocio con agenda clásica, sin profesionales
     session.commit.side_effect = SQLAlchemyError("private SQL details")
     def failed_db():
         yield session

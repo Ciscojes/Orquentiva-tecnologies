@@ -29,7 +29,7 @@ def test_business_creation_validation_duplicates_and_persistence(client, session
     assert {item["id"] for item in initial.json()} == {"alfa", "beta"}
     response = client.post("/admin/businesses", headers=ADMIN, json={"id":"  gamma  ", "name":"  Negocio Gamma  "})
     assert response.status_code == 201
-    assert response.json() == {"id":"gamma", "name":"Negocio Gamma", "is_active":True}
+    assert response.json() == {"id":"gamma", "name":"Negocio Gamma", "is_active":True, "booking_enabled":True}
     with session_factory() as session:
         assert session.get(Business,"gamma").name == "Negocio Gamma"
     assert client.post("/admin/businesses", headers=ADMIN, json={"id":"gamma","name":"Otro"}).status_code == 409

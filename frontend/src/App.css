@@ -631,3 +631,13 @@ html { scroll-padding-top: calc(var(--header-height, 140px) + 12px); }
 @media (max-width: 700px) {
   .header { max-height: 100dvh; overflow-y: auto; }
 }
+
+.booking-public { max-width: 42rem; margin: 2rem auto; }
+.booking-public label, .booking-public select { display: block; width: 100%; }
+.booking-public select { min-height: 44px; }
+.team-agenda .mobile-person { display: none; }
+@media(max-width:700px){
+  .team-agenda thead,.team-agenda .empty { display:none; }
+  .team-agenda,.team-agenda tbody,.team-agenda tr,.team-agenda th,.team-agenda td {display:block;min-width:0;}
+  .team-agenda .mobile-person {display:inline;}
+}

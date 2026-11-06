@@ -52,3 +52,7 @@ README y Alembic. No ejecutar downgrade en la base habitual.
 Resultados: specs/008-admin-dashboard/verification.md.
 
 Navegación: usar «Acceso clientes» en la cabecera para iniciar sesión y «Mi panel» para volver al dashboard. En móvil, acceso e idioma permanecen visibles; los enlaces del sitio se agrupan en «Menú». El enlace #access anterior sigue funcionando.
+
+## Alta después del acuerdo comercial
+
+Una solicitud en el sitio registra un contacto comercial. Una vez acordado el servicio, crea el negocio y su cuenta desde Administración. Marca **Incluir agenda de citas** para un negocio que contrata reservas. También puedes habilitar o deshabilitar esta opción en la ficha de un negocio existente. Deshabilitar cierra el enlace público y conserva su historial. Una cuenta sin agenda puede acceder al panel básico. Los pedidos y las integraciones con agentes requieren sus propios flujos antes de ofrecerlos como funcionalidades activas.

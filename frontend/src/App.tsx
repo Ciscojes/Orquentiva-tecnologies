@@ -85,6 +85,8 @@ const translations = {
 const anchors = ["home", "services", "solutions", "about", "contact"];
 const privateAnchors = new Set(["#login", "#panel", "#access", "#client-services", "#client-hours", "#client-bookings"]);
 
+import PublicBooking from "./components/PublicBooking";
+
 function App() {
   const [year] = useState(() => new Date().getFullYear());
   const [hash, setHash] = useState(() => window.location.hash);
@@ -218,7 +220,7 @@ function App() {
       </header>
 
       <main className={privateView ? "private-main" : "public-main"}>
-        {privateView ? <>
+        {hash.startsWith("#reservar/") ? <PublicBooking key={hash} business={hash.slice("#reservar/".length)} language={language}/> : privateView ? <>
           <div className="private-breadcrumb"><a href="#home">← {t.back}</a></div>
           <AccessPanel language={language} locationHash={hash} onSessionChange={onSessionChange} />
         </> : <>

@@ -11,6 +11,9 @@ from app.auth import current_business
 from app.database import get_db
 from app.models import Appointment, Business, BusinessHours, Service
 
+from app.scheduling import require_agenda, utc
+from app.models import Professional
+
 router = APIRouter(prefix="/client", tags=["client"])
 Tenant = Annotated[str, Depends(current_business)]
 Database = Annotated[Session, Depends(get_db)]
@@ -78,6 +81,9 @@ def hours_view(rows):
 @router.get("/dashboard")
 def dashboard(business_id: Tenant, session: Database):
     business = session.get(Business, business_id)
+    if not business.booking_enabled:
+        return {"booking_enabled": False, "business": {"id": business.id, "name": business.name, "time_zone": TIME_ZONE}}
+    team = session.scalars(select(Professional).where(Professional.business_id == business_id).order_by(Professional.id)).all()
     services = session.scalars(select(Service).where(Service.business_id == business_id).order_by(Service.id))
     appointments = session.scalars(select(Appointment).where(Appointment.business_id == business_id)
                                    .order_by(Appointment.starts_at, Appointment.id))
@@ -85,13 +91,16 @@ def dashboard(business_id: Tenant, session: Database):
     for row in appointments:
         stamp = row.starts_at if row.starts_at.tzinfo else row.starts_at.replace(tzinfo=timezone.utc)
         bookings.append({"id": row.id, "customer_name": row.customer_name, "starts_at": stamp.astimezone(timezone.utc).isoformat()})
+        if row.professional_id is not None:
+            bookings[-1].update(professional_id=row.professional_id, service_id=row.service_id, ends_at=utc(row.ends_at).isoformat())
     hours = session.scalars(select(BusinessHours).where(BusinessHours.business_id == business_id)).all()
-    return {"business": {"id": business.id, "name": business.name, "time_zone": TIME_ZONE},
+    return {"booking_enabled": True, "team": [{"id": p.id, "name": p.name, "service_ids": p.service_ids, "days": p.days} for p in team], "business": {"id": business.id, "name": business.name, "time_zone": TIME_ZONE},
             "services": [service_view(row) for row in services], "appointments": bookings, "hours": hours_view(hours)}
 
 
 @router.post("/services", status_code=201)
 def add_service(payload: ServiceIn, business_id: Tenant, session: Database):
+    require_agenda(session, business_id, lock=True)
     service = Service(business_id=business_id, **payload.model_dump())
     session.add(service)
     session.commit()
@@ -100,6 +109,7 @@ def add_service(payload: ServiceIn, business_id: Tenant, session: Database):
 
 @router.put("/services/{service_id}")
 def edit_service(service_id: int, payload: ServiceIn, business_id: Tenant, session: Database):
+    require_agenda(session, business_id, lock=True)
     service = session.scalar(select(Service).where(Service.id == service_id, Service.business_id == business_id))
     if service is None:
         raise HTTPException(404, "Servicio no encontrado")
@@ -111,7 +121,7 @@ def edit_service(service_id: int, payload: ServiceIn, business_id: Tenant, sessi
 
 @router.put("/hours")
 def save_hours(payload: WeekIn, business_id: Tenant, session: Database):
-    session.scalar(select(Business).where(Business.id == business_id).with_for_update())
+    require_agenda(session, business_id, lock=True)
     session.execute(delete(BusinessHours).where(BusinessHours.business_id == business_id))
     rows = [BusinessHours(business_id=business_id, weekday=day.weekday, is_closed=day.is_closed,
                           opens_at=to_minutes(day.opens_at), closes_at=to_minutes(day.closes_at)) for day in payload.days]

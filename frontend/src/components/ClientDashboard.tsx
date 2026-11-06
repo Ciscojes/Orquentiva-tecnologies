@@ -4,8 +4,8 @@ import type { Language } from "../services";
 type Service = {id:number; name:string; price_crc:number; duration_minutes:number|null; is_active:boolean};
 type Day = {weekday:number; is_closed:boolean; opens_at:string|null; closes_at:string|null};
 type Hours = {configured:boolean; days:Day[]};
-type Booking = {id:number; customer_name:string; starts_at:string};
-type Dashboard = {business:{id:string; name:string; time_zone:string}; services:Service[]; hours:Hours; appointments:Booking[]};
+type Booking = {id:number; customer_name:string; starts_at:string; professional_id?:number; service_id?:number};
+type Dashboard = {team:Member[]; booking_enabled:boolean; business:{id:string; name:string; time_zone:string}; services:Service[]; hours:Hours; appointments:Booking[]};
 type Props = {language:Language; onSessionEnded:()=>void};
 const copy = {
   es: {
@@ -78,9 +78,9 @@ export default function ClientDashboard({language,onSessionEnded}:Props) {
   const locale=language==="es"?"es-CR":"en-US";
   const money=new Intl.NumberFormat(locale,{style:"currency",currency:"CRC",maximumFractionDigits:0});
   return <div className="admin-dashboard client-dashboard" aria-labelledby="client-title">
-    <header className="dashboard-heading"><div><span className="eyebrow">{t.title}</span><h3 id="client-title">{data?.business.name??t.title}</h3><p>{t.intro}</p></div>
+    <header className="dashboard-heading"><div><span className="eyebrow">{t.title}</span><h3 id="client-title">{data?.business.name??t.title}</h3>{data?.booking_enabled&&<p>{t.intro}</p>}</div>
       <button className="dashboard-secondary" disabled={loading||saving} onClick={()=>{setLoading(true);setError(false);setEditing(null);setServiceMessage(null);setReload(value=>value+1);}}>{t.refresh}</button></header>
-    {loading?<p role="status">{t.loading}</p>:error||!data?<p className="dashboard-error" role="alert">{t.error}</p>:<>
+    {loading?<p role="status">{t.loading}</p>:error||!data?<p className="dashboard-error" role="alert">{t.error}</p>:!data.booking_enabled?<p>{language==="es"?"Tu cuenta está activa. Contacta con ORQENTIVA para gestionar tus servicios contratados.":"Your account is active. Contact ORQENTIVA to manage your contracted services."}</p>:<>
       <p className="dashboard-count">{data.services.length} {t.countServices} · {data.appointments.length} {t.countBookings}</p>
       <div className="client-section-links"><a href="#client-services">{t.catalog}</a><a href="#client-hours">{t.hours}</a><a href="#client-bookings">{t.bookings}</a></div>
       <section id="client-services" className="dashboard-card" aria-labelledby="client-services-title"><h4 id="client-services-title">{t.catalog}</h4>
@@ -97,12 +97,10 @@ export default function ClientDashboard({language,onSessionEnded}:Props) {
       </section>
       <HoursEditor key={reload} hours={data.hours} language={language} onSessionEnded={onSessionEnded} onBusy={markBusy}
         onSaved={hours=>setData(previous=>previous?{...previous,hours}:previous)}/>
+      <Team data={data} language={language} onSessionEnded={onSessionEnded} onSaved={member=>setData(prev=>prev?{...prev,team:[...prev.team.filter(m=>m.id!==member.id),member].sort((a,b)=>a.id-b.id)}:prev)}/>
       <section id="client-bookings" className="dashboard-card" aria-labelledby="client-bookings-title"><h4 id="client-bookings-title">{t.bookings}</h4>
-        <p>{t.readOnly}</p><p>{t.zone}</p>
-        {data.appointments.length===0?<p>{t.noBookings}</p>:<div className="client-table-wrapper" role="region" aria-label={t.bookings} tabIndex={0}>
-          <table className="client-bookings-table"><thead><tr><th scope="col">{t.reference}</th><th scope="col">{t.customer}</th><th scope="col">{t.date}</th></tr></thead>
-            <tbody>{data.appointments.map(booking=><tr key={booking.id}><td>#{booking.id}</td><td>{booking.customer_name}</td><td><time dateTime={booking.starts_at}>{new Intl.DateTimeFormat(locale,{timeZone:data.business.time_zone,dateStyle:"medium",timeStyle:"short"}).format(new Date(booking.starts_at))}</time></td></tr>)}</tbody>
-          </table></div>}
+        <p>{t.zone}</p>
+        {data.appointments.length===0?<p>{t.noBookings}</p>:<Agenda data={data} language={language}/>}
       </section>
     </>}
   </div>;
@@ -157,12 +155,63 @@ function HoursEditor({language,hours,onSessionEnded,onBusy,onSaved}:Props & {hou
   return <section id="client-hours" className="dashboard-card" aria-labelledby="client-hours-title"><h4 id="client-hours-title">{t.hours}</h4><p>{t.zone}</p><p>{t.hoursHelp}</p>
     {!hours.configured&&<p className="dashboard-confirm">{t.notConfigured}</p>}
     <form onSubmit={save} aria-busy={busy}><fieldset className="dashboard-fields" disabled={busy}>
-      <div className="client-hours-grid">{days.map(day=><fieldset key={day.weekday} className="client-day"><legend>{t.days[day.weekday]}</legend>
-        <label className="client-checkbox"><input id={`day-${day.weekday}-closed`} type="checkbox" checked={day.is_closed} onChange={e=>change(day.weekday,{is_closed:e.target.checked})}/>{t.closed}</label>
-        <label htmlFor={`day-${day.weekday}-open`}>{t.opens}</label><input id={`day-${day.weekday}-open`} type="time" step={60} value={day.opens_at??""} required={!day.is_closed} disabled={day.is_closed||busy} onChange={e=>change(day.weekday,{opens_at:e.target.value||null})}/>
-        <label htmlFor={`day-${day.weekday}-close`}>{t.closes}</label><input id={`day-${day.weekday}-close`} type="time" step={60} value={day.closes_at??""} required={!day.is_closed} disabled={day.is_closed||busy} onChange={e=>change(day.weekday,{closes_at:e.target.value||null})}/>
-      </fieldset>)}</div>
+      <WeekFields days={days} busy={busy} language={language} prefix="day" change={change}/>
       <button className="btn btn-primary client-save-hours" type="submit">{busy?t.saving:t.saveHours}</button>
     </fieldset><Feedback message={message} language={language}/></form>
   </section>;
+}
+
+function WeekFields({days,busy,language,prefix,change}:{days:Day[];busy:boolean;language:Language;prefix:string;change:(weekday:number,update:Partial<Day>)=>void}){
+  const t=copy[language];
+  return <div className="client-hours-grid">{days.map(day=><fieldset key={day.weekday} className="client-day"><legend>{t.days[day.weekday]}</legend>
+        <label className="client-checkbox"><input id={`${prefix}-${day.weekday}-closed`} type="checkbox" checked={day.is_closed} onChange={e=>change(day.weekday,{is_closed:e.target.checked})}/>{t.closed}</label>
+        <label htmlFor={`${prefix}-${day.weekday}-open`}>{t.opens}</label><input id={`${prefix}-${day.weekday}-open`} type="time" step={60} value={day.opens_at??""} required={!day.is_closed} disabled={day.is_closed||busy} onChange={e=>change(day.weekday,{opens_at:e.target.value||null})}/>
+        <label htmlFor={`${prefix}-${day.weekday}-close`}>{t.closes}</label><input id={`${prefix}-${day.weekday}-close`} type="time" step={60} value={day.closes_at??""} required={!day.is_closed} disabled={day.is_closed||busy} onChange={e=>change(day.weekday,{closes_at:e.target.value||null})}/>
+      </fieldset>)}</div>;
+}
+
+type Member = {id:number; name:string; service_ids:number[]; days:Day[]};
+function Team({data,language,onSaved,onSessionEnded}:Props & {data:Dashboard;onSaved:(m:Member)=>void}){
+  const es=language==="es";
+  const [editing,setEditing]=useState<Member|null>(null);
+  const [busy,setBusy]=useState(false);
+  const [failed,setFailed]=useState(false);
+  function editMember(m:Member){setEditing({...m});setFailed(false);}
+  function change(weekday:number,update:Partial<Day>){
+    if(editing)setEditing({...editing,days:editing.days.map(d=>d.weekday===weekday?{...d,...update}:d)});
+  }
+  async function save(e:FormEvent){
+    e.preventDefault();if(!editing||busy)return;
+    setBusy(true);setFailed(false);
+    try{
+      const {id,name,service_ids,days}=editing;
+      const member=await request(id?"team/"+id:"team",{method:id?"PUT":"POST",body:JSON.stringify({name,service_ids,
+        days:days.map(d=>d.is_closed?{...d,opens_at:null,closes_at:null}:d)})});
+      onSaved(member);setEditing(null);
+    }catch(error){if(unauthorized(error))onSessionEnded();else setFailed(true);}finally{setBusy(false);}
+  }
+  return <section className="dashboard-card"><h4>{es?"Mi equipo":"My team"}</h4>
+    <ul className="business-list">{data.team.map(m=><li key={m.id}>{m.name}<button className="dashboard-secondary" disabled={busy} onClick={()=>editMember(m)}>{copy[language].edit}</button></li>)}</ul>
+    <button className="dashboard-secondary" disabled={busy} onClick={()=>editMember({id:0,name:"",service_ids:[],days:data.hours.days})}>{es?"Añadir profesional":"Add professional"}</button>
+    {editing&&<form onSubmit={save}><fieldset className="dashboard-fields" disabled={busy}>
+      <label>{es?"Nombre público del profesional":"Public professional name"}<input required maxLength={100} value={editing.name} onChange={e=>setEditing({...editing,name:e.target.value})}/></label>
+      <fieldset><legend>{copy[language].catalog}</legend>{data.services.map(s=><label key={s.id} className="client-checkbox"><input type="checkbox" checked={editing.service_ids.includes(s.id)} onChange={e=>setEditing({...editing,service_ids:e.target.checked?[...editing.service_ids,s.id]:editing.service_ids.filter(id=>id!==s.id)})}/>{s.name}</label>)}</fieldset>
+      <WeekFields days={editing.days} prefix="member" language={language} busy={busy} change={change}/>
+      <button className="btn btn-primary">{copy[language].save}</button><button type="button" className="dashboard-secondary" onClick={()=>setEditing(null)}>{copy[language].cancel}</button>
+      {failed&&<p role="alert">{copy[language].error}</p>}
+    </fieldset></form>}
+    <p><a href={"#reservar/"+data.business.id}>{es?"Abrir enlace de reservas para compartir":"Open shareable booking link"}</a></p>
+  </section>;
+}
+function Agenda({data,language}:{data:Dashboard;language:Language}){
+  const groups=new Map<string,Booking[]>();
+  for(const b of data.appointments)groups.set(b.starts_at,[...(groups.get(b.starts_at)??[]),b]);
+  const columns:{id:number|null;name:string}[]=data.team.map(({id,name})=>({id,name}));
+  if(data.appointments.some(b=>!b.professional_id))columns.push({id:null,name:language==="es"?"Sin asignar":"Unassigned"});
+  const date=new Intl.DateTimeFormat(language,{timeZone:data.business.time_zone,dateStyle:"medium",timeStyle:"short"});
+  return <div className="client-table-wrapper" tabIndex={0}><table className="client-bookings-table team-agenda"><thead><tr><th>{copy[language].date}</th>{columns.map(p=><th key={p.id??0}>{p.name}</th>)}</tr></thead><tbody>
+    {[...groups].map(([stamp,rows])=><tr key={stamp}><th scope="row">{date.format(new Date(stamp))}</th>{columns.map(p=>{
+      const b=rows.find(b=>(b.professional_id??null)===p.id);
+      return <td key={p.id??0} className={b?"booked":"empty"}>{b?<><b className="mobile-person">{p.name} · </b>{b.customer_name} {data.services.find(s=>s.id===b.service_id)?.name}</>:"—"}</td>;
+    })}</tr>)}</tbody></table></div>;
 }
