@@ -1,0 +1,5 @@
+# Chat de reservas por negocio
+El visitante abre el chat desde el enlace público del negocio. En español o inglés puede indicar servicio, profesional, día y hora en varios mensajes. Las opciones y los turnos provienen exclusivamente del catálogo público y la agenda consultada en hora de Costa Rica. Ante datos ambiguos, el chat pregunta o muestra opciones.
+LangGraph organiza interpretación, consulta y preparación del resumen. El borrador vive en la pestaña. Solo una confirmación explícita posterior al resumen envía la solicitud al mismo endpoint de reservas del formulario. Reintentar una confirmación reutiliza la clave. Ante conflicto se vuelve a consultar y se pide otra confirmación. Abandonar no crea citas. Sin modelos externos, RAG ni WhatsApp en este incremento.
+
+Verificado con 106 pruebas, compilación y lint del frontend. En Edge se confirmaron dos citas del mismo horario mediante conversaciones independientes y se comprobó su aparición en el panel de prueba. En la instalación local de Alfa se verificó la consulta sin crear reservas.

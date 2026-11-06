@@ -29,7 +29,9 @@ from app.scheduling import require_agenda
 from app.models import Professional
 from app.routes.public_booking import router as public_booking_router
 app.include_router(team_router)
+from app.routes.booking_chat import router as booking_chat_router
 app.include_router(public_booking_router)
+app.include_router(booking_chat_router)
 
 
 @app.exception_handler(RequestValidationError)
