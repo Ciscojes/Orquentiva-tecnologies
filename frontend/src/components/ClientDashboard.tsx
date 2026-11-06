@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import KnowledgeEditor from "./KnowledgeEditor";
 import type { Language } from "../services";
 
 type Service = {id:number; name:string; price_crc:number; duration_minutes:number|null; is_active:boolean};
@@ -97,6 +98,7 @@ export default function ClientDashboard({language,onSessionEnded}:Props) {
       </section>
       <HoursEditor key={reload} hours={data.hours} language={language} onSessionEnded={onSessionEnded} onBusy={markBusy}
         onSaved={hours=>setData(previous=>previous?{...previous,hours}:previous)}/>
+      <KnowledgeEditor language={language} onSessionEnded={onSessionEnded}/>
       <Team data={data} language={language} onSessionEnded={onSessionEnded} onSaved={member=>setData(prev=>prev?{...prev,team:[...prev.team.filter(m=>m.id!==member.id),member].sort((a,b)=>a.id-b.id)}:prev)}/>
       <section id="client-bookings" className="dashboard-card" aria-labelledby="client-bookings-title"><h4 id="client-bookings-title">{t.bookings}</h4>
         <p>{t.zone}</p>

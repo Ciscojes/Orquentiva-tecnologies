@@ -24,6 +24,15 @@ class Base(DeclarativeBase):
     pass
 
 
+class KnowledgeDocument(Base):
+    __tablename__ = "knowledge_documents"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    business_id: Mapped[str] = mapped_column(ForeignKey("businesses.id"), index=True)
+    title: Mapped[str] = mapped_column(String(120))
+    body: Mapped[str] = mapped_column(Text)
+    published: Mapped[bool] = mapped_column(Boolean, server_default=text("false"), default=False)
+
+
 class Business(Base):
     __tablename__ = "businesses"
 

@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from app.routes.client import Database
 from app.routes.public_booking import catalog
 from app.routes.team import available
+from app.routes.knowledge import answer, policy_question
 from app.scheduling import LOCAL
 
 router = APIRouter(prefix="/book/{business_id}", tags=["chat"])
@@ -29,6 +30,7 @@ class Draft(BaseModel):
 
 
 class Turn(BaseModel):
+    mode: Literal['booking','knowledge'] = 'booking'
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
     message: str = Field(max_length=350)
     language: Literal["es","en"] = "es"
@@ -153,6 +155,8 @@ workflow = builder.compile()
 @router.post("/chat")
 def chat(business_id: str, turn: Turn, session: Database):
     menu = catalog(business_id, session)
+    if turn.mode == 'knowledge' or policy_question(turn.message):
+        return answer(session, business_id, turn.message, turn.language, menu['name'])
     with tracing_context(enabled=False):
         result = workflow.invoke({"business":business_id,"turn":turn,"menu":menu},context=session)
     return {key:result[key] for key in ("draft","reply","options","proposal")}

@@ -15,7 +15,7 @@ Se conserva la estructura del repositorio y la web corporativa; no se crea otro 
 | 009 | Panel de cliente: servicios, duración, consulta de reservas y horarios | Implementado en d429249 |
 | 010a | Agenda por profesional y reservas por enlace | Implementado para validación local |
 | 010b | LangGraph: chat web de reservas con confirmación explícita | Implementado en desarrollo local (SPEC 010b) |
-| 011 | RAG básico con documentos separados por empresa y referencias | Pendiente |
+| 011 | Consulta extractiva de documentos publicados por empresa con referencias | Implementado y probado localmente |
 | 012 | Evaluación, documentación, slides y guion del vídeo | Pendiente |
 
 La numeración propuesta en el chat se desplaza porque SPEC-006 ya existía.

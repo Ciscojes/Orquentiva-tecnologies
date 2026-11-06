@@ -4,7 +4,9 @@ import type { Language } from "../services";
 type Draft = {step:string;clock?:string|null};
 type Proposal = {service_id:number;professional_id:number;customer_name:string;starts_at:string};
 type Reply = {draft:Draft;reply:string;options:string[];proposal:Proposal|null};
-type Line = {agent:boolean;text:string};
+type Source = {title:string;paragraph:number;quote:string};
+type Knowledge = {kind:'knowledge';reply:string;sources:Source[]};
+type Line = {agent:boolean;text:string;sources?:Source[]};
 const copy = {
   es:{title:"Reservar por chat",intro:"Dime qué servicio buscas, con quién y qué día. Por ejemplo: «Quiero un corte con Ana el sábado a las 10».",
     input:"Tu mensaje",send:"Enviar",yes:"Confirmar cita",restart:"Empezar de nuevo",choose:"Elige una opción",ok:"Cita confirmada.",
@@ -15,6 +17,7 @@ const copy = {
 };
 export default function BookingChat({business,language}:{business:string;language:Language}){
   const t=copy[language];
+  const [mode,setMode]=useState<'booking'|'knowledge'>('booking');
   const [lines,setLines]=useState<Line[]>([]);
   const [turn,setTurn]=useState<Reply|null>(null);
   const [input,setInput]=useState("");
@@ -25,7 +28,7 @@ export default function BookingChat({business,language}:{business:string;languag
   const inFlight=useRef(false);
   const last=useRef("");
   const endpoint="/book/"+encodeURIComponent(business);
-  function append(agent:boolean,text:string){setLines(prev=>[...prev,{agent,text}]);}
+  function append(agent:boolean,text:string,sources?:Source[]){setLines(prev=>[...prev,{agent,text,sources}]);}
   function restart(){setLines([]);setTurn(null);setDone(false);setFailed(false);setInput("");key.current="";}
   async function post(url:string,body:unknown){
     return fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body),signal:AbortSignal.timeout(15000)});
@@ -39,31 +42,33 @@ export default function BookingChat({business,language}:{business:string;languag
     try{
       let draft=turn?.draft;
       const affirmative=/^(sí|si|confirmo|confirmar cita|yes|confirm|confirm appointment)[.!]?$/i.test(message);
-      if(turn?.proposal&&affirmative){
+      if(mode==='booking'&&turn?.proposal&&affirmative){
         const response=await post(endpoint,{...turn.proposal,request_key:key.current});
         if(response.ok){append(true,t.ok);setDone(true);return;}
         if(response.status!==409)throw Error();
         append(true,t.conflict);draft={...turn.draft,clock:null};message="";
-      }else if(/^(no|cancelar|cancel|empezar de nuevo|start over)[.!]?$/i.test(message)){
+      }else if(mode==='booking'&&/^(no|cancelar|cancel|empezar de nuevo|start over)[.!]?$/i.test(message)){
         restart();return;
       }
-      const response=await post(endpoint+"/chat",{message,language,...(draft?{draft}:{})});
+      const response=await post(endpoint+"/chat",{message,language,mode,...(draft?{draft}:{})});
       if(!response.ok)throw Error();
-      const next:Reply=await response.json();
+      const next:Reply|Knowledge=await response.json();
+      if('kind' in next){append(true,next.reply,next.sources);setMode('knowledge');return;}
       if(next.proposal)key.current=crypto.randomUUID();
       setTurn(next);append(true,next.reply);
     }catch{setFailed(true);}finally{inFlight.current=false;setBusy(false);}
   }
   function submit(e:FormEvent){e.preventDefault();void send(input);}
-  return <details className="booking-chat"><summary>{t.title}</summary><p>{t.intro}</p>
-    <div role="log" aria-live="polite">{lines.map((line,i)=><p key={i}><strong>{line.agent?t.agent:t.you}: </strong>{line.text}</p>)}</div>
+  return <details className="booking-chat"><summary>{t.title}</summary><label>{language==='es'?'Quiero':'I want to'}<select value={mode} disabled={busy||done} onChange={e=>{setMode(e.target.value as 'booking'|'knowledge');setInput('');setFailed(false);}}><option value="booking">{t.title}</option><option value="knowledge">{language==='es'?'Consultar información del negocio':'Ask about the business'}</option></select></label>
+    <p>{mode==='booking'?t.intro:language==='es'?'Pregunta por las políticas o condiciones publicadas por este negocio.':'Ask about policies or terms published by this business.'}</p>
+    <div role="log" aria-live="polite">{lines.map((line,i)=><div key={i}><p><strong>{line.agent?t.agent:t.you}: </strong>{line.text}</p>{line.sources?.map((s,j)=><blockquote key={j}>{s.quote}<footer>{s.title} · {language==='es'?'párrafo':'paragraph'} {s.paragraph}</footer></blockquote>)}</div>)}</div>
     {failed&&<p role="alert">{t.error} <button disabled={busy} onClick={()=>void send(last.current,true)}>{t.retry}</button></p>}
     {busy&&<p role="status">{t.pending}</p>}
     {!done&&<form onSubmit={submit}><fieldset disabled={busy} className="dashboard-fields">
-      {!!turn?.options.length&&<label>{t.choose}<select value="" onChange={e=>void send(e.target.value)}><option value="">{t.choose}</option>{turn.options.map((option,i)=><option key={i}>{option}</option>)}</select></label>}
+      {mode==='booking'&&!!turn?.options.length&&<label>{t.choose}<select value="" onChange={e=>void send(e.target.value)}><option value="">{t.choose}</option>{turn.options.map((option,i)=><option key={i}>{option}</option>)}</select></label>}
       <label>{t.input}<input maxLength={350} value={input} onChange={e=>setInput(e.target.value)}/></label>
       <button className="dashboard-secondary" disabled={!input.trim()}>{t.send}</button>
-      {turn?.proposal&&<button className="btn btn-primary" type="button" onClick={()=>void send(t.yes)}>{t.yes}</button>}
+      {mode==='booking'&&turn?.proposal&&<button className="btn btn-primary" type="button" onClick={()=>void send(t.yes)}>{t.yes}</button>}
     </fieldset></form>}
     {!!lines.length&&<button className="dashboard-secondary" disabled={busy} onClick={restart}>{t.restart}</button>}
   </details>;

@@ -32,6 +32,8 @@ app.include_router(team_router)
 from app.routes.booking_chat import router as booking_chat_router
 app.include_router(public_booking_router)
 app.include_router(booking_chat_router)
+from app.routes.knowledge import router as knowledge_router
+app.include_router(knowledge_router)
 
 
 @app.exception_handler(RequestValidationError)

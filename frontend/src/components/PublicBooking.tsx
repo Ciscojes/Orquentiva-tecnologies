@@ -90,7 +90,7 @@ export default function PublicBooking({business,language}:{business:string;langu
   }
   const time=(s:string)=>new Intl.DateTimeFormat(language,{timeZone:"America/Costa_Rica",hour:"2-digit",minute:"2-digit"}).format(new Date(s));
   return <section className="dashboard-card booking-public"><h1>{t.title}</h1><h2>{catalog?.name}</h2>
-    {!!catalog?.services.length&&<BookingChat business={business} language={language}/>}
+    {catalog&&<BookingChat business={business} language={language}/>}
     {message!==null&&<p role="status">{t[message]} {assigned&&<strong>{day} · {time(stamp)} · {catalog?.team.find(p=>p.id===assigned)?.name}</strong>}</p>}
     {message==="unavailable"&&<button onClick={()=>{setMessage(null);if(!catalog)setCatalogRetry(n=>n+1);else setRetry(n=>n+1);}}>{t.retry}</button>}
     {!catalog&&message===null&&<p>{t.loading}</p>}
