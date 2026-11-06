@@ -133,6 +133,25 @@ def main():
                 assert client.patch("/admin/businesses/gamma", headers=admin, json={"is_active":False}).status_code == 200
                 assert client.get("/auth/me",headers={"Cookie":f"{COOKIE_NAME}={gamma_token}"}).status_code == 401
                 print("OK: panel administrativo PostgreSQL, creación, permisos y revocación al desactivar")
+                assert client.get("/client/dashboard",headers=admin).status_code == 403
+                before_client = client.get("/client/dashboard",headers=beta).json()
+                assert before_client["services"][0]["duration_minutes"] is None
+                assert before_client["hours"]["configured"] is False
+                response = client.post("/client/services",headers=beta,json={"name":"QA cliente","price_crc":9000,"duration_minutes":40})
+                assert response.status_code == 201
+                client_service_id = response.json()["id"]
+                assert client.put(f"/client/services/{client_service_id}",headers=alfa,json={"name":"Intento","price_crc":1,"duration_minutes":5}).status_code == 404
+                assert client.put(f"/client/services/{client_service_id}",headers=beta,json={"name":"QA cliente","price_crc":9500,"duration_minutes":50,"is_active":False}).status_code == 200
+                week = {"days":[{"weekday":day,"is_closed":day>=5,"opens_at":"09:00" if day<5 else None,"closes_at":"17:00" if day<5 else None} for day in range(7)]}
+                assert client.put("/client/hours",headers=beta,json=week).status_code == 200
+                assert client.get("/client/dashboard",headers=beta).json()["hours"]["configured"] is True
+                assert client.get("/client/dashboard",headers=alfa).json()["hours"]["configured"] is False
+                from app.models import Service
+                with SessionLocal.begin() as session:
+                    row = session.get(Service,client_service_id)
+                    assert row.duration_minutes == 50 and row.price_crc == 9500 and not row.is_active
+                    session.delete(row)  # Solo dato de QA, para conservar comparación histórica posterior.
+                print("OK: panel cliente PostgreSQL, catálogo, duración, horarios y aislamiento")
                 assert client.get("/services", headers=alfa).json()[0]["name"] == "Corte clásico"
                 assert client.get("/services", headers=beta).json()[0]["name"] == "Corte premium"
                 def book(stamp, headers=alfa):

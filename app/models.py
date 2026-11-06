@@ -42,6 +42,7 @@ class Business(Base):
 
 class Service(Base):
     __tablename__ = "services"
+    __table_args__ = (CheckConstraint("duration_minutes IS NULL OR (duration_minutes >= 5 AND duration_minutes <= 480)", name="ck_service_duration"),)
 
     id: Mapped[int] = mapped_column(
         Integer,
@@ -62,6 +63,9 @@ class Service(Base):
         Integer,
         nullable=False,
     )
+
+    duration_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default=true(), nullable=False)
 
 
 class Appointment(Base):
@@ -166,3 +170,18 @@ class AuthSession(Base):
     token_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True, nullable=False)
+
+
+class BusinessHours(Base):
+    __tablename__ = "business_hours"
+    __table_args__ = (
+        CheckConstraint("weekday >= 0 AND weekday <= 6", name="ck_hours_weekday"),
+        CheckConstraint("(is_closed AND opens_at IS NULL AND closes_at IS NULL) OR "
+                        "(NOT is_closed AND opens_at IS NOT NULL AND closes_at IS NOT NULL "
+                        "AND opens_at >= 0 AND closes_at <= 1439 AND opens_at < closes_at)", name="ck_hours_interval"),
+    )
+    business_id: Mapped[str] = mapped_column(ForeignKey("businesses.id"), primary_key=True)
+    weekday: Mapped[int] = mapped_column(Integer, primary_key=True)
+    is_closed: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    opens_at: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    closes_at: Mapped[int | None] = mapped_column(Integer, nullable=True)

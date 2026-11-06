@@ -7,4 +7,4 @@
 - [x] Verificar pruebas, migraciones y recorrido real de navegador aislado.
 - [x] Activar migración local con respaldo y comprobar conservación de datos.
 - [x] Registrar resultados y actualizar documentación.
-- [ ] Revisar y registrar commit manualmente.
+- [x] Commit manual 7a99ee0 verificado en Git.

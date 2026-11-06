@@ -15,7 +15,7 @@ recargar la página. Un business_admin no ve el panel y recibe 403 en sus rutas.
 6. Reactivar permite nuevos logins, pero no recupera sesiones anteriores.
 
 No incluye traslado de cuentas, eliminación de negocios, cambio de contraseñas ni
-edición de reservas. El panel de cliente corresponde a SPEC-009.
+edición de reservas. El panel de cliente está disponible en SPEC-009; ver PANEL_CLIENTE.md.
 
 ## Contrato
 
@@ -50,3 +50,5 @@ Vite redirige /admin, /auth y /leads a ORQENTIVA. Para una base nueva, seguir
 README y Alembic. No ejecutar downgrade en la base habitual.
 
 Resultados: specs/008-admin-dashboard/verification.md.
+
+Navegación: usar «Acceso clientes» en la cabecera para iniciar sesión y «Mi panel» para volver al dashboard. En móvil, acceso e idioma permanecen visibles; los enlaces del sitio se agrupan en «Menú». El enlace #access anterior sigue funcionando.

@@ -569,3 +569,65 @@ section, #solutions { scroll-margin-top: 24px; }
   .dashboard-layout { grid-template-columns: 1fr; }
   .business-list li { flex-wrap: wrap; }
 }
+
+/* SPEC-009: catálogo, horario semanal y reservas del cliente */
+.client-dashboard > .dashboard-card { margin-top: 24px; }
+.client-section-links { display: flex; flex-wrap: wrap; gap: 12px; margin: 22px 0; }
+.client-section-links a { background: white; border: 1px solid #9bafc0; border-radius: 8px; padding: 12px 18px; font-weight: 700; }
+.client-service-editor h5 { margin-top: 0; }
+.dashboard-fields .client-checkbox { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+.dashboard-fields .client-checkbox input { width: 20px; height: 20px; flex-shrink: 0; accent-color: #087c78; }
+.client-hours-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+.client-day { min-width: 0; border: 1px solid #d9e3ed; border-radius: 12px; padding: 16px; background: #f8fafc; display: flex; flex-direction: column; gap: 10px; }
+.client-day legend { padding: 0 6px; font-weight: 700; }
+.client-day input:disabled { opacity: .5; }
+.client-save-hours { align-self: flex-start; }
+.client-table-wrapper { overflow-x: auto; }
+.client-bookings-table { width: 100%; border-collapse: collapse; text-align: left; }
+.client-bookings-table th, .client-bookings-table td { padding: 16px 12px; border-bottom: 1px solid #e2e8f0; overflow-wrap: anywhere; }
+.client-bookings-table th { background: #eff8f8; }
+@media (max-width: 1000px) { .client-hours-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) {
+  .client-hours-grid { grid-template-columns: 1fr; }
+  .client-save-hours { width: 100%; }
+  .client-bookings-table th, .client-bookings-table td { padding: 10px 6px; font-size: 13px; }
+}
+
+/* Acceso independiente y navegación táctil */
+.header-tools { display: flex; align-items: center; gap: 14px; }
+.header-access { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 18px; background: transparent; color: white; border: 1px solid #87a4b5; border-radius: 9px; font-weight: 700; white-space: nowrap; }
+.header-access:hover { background: #ffffff12; border-color: #36c6c0; }
+.primary-navigation a { display: inline-flex; align-items: center; min-height: 44px; }
+.language-switch button { min-height: 44px; min-width: 44px; }
+.mobile-menu-toggle { display: none; min-height: 44px; padding: 8px 14px; border: 1px solid #87a4b5; border-radius: 8px; background: transparent; color: white; }
+.private-main { background: #eaf2f7; min-height: calc(100vh - 180px); }
+.private-breadcrumb { max-width: 1320px; margin: 0 auto; padding: 20px 6% 0; }
+.private-breadcrumb a { display: inline-flex; align-items: center; min-height: 44px; text-decoration: underline; text-underline-offset: 4px; }
+.private-main .access-section { padding-top: 20px; }
+.access-section > h1 { font-size: clamp(28px, 4vw, 42px); line-height: 1.2; margin: 12px 0 20px; }
+@media (max-width: 1150px) {
+  .header { flex-wrap: wrap; gap: 12px 20px; }
+  .primary-navigation { order: 3; width: 100%; }
+}
+@media (max-width: 700px) {
+  .header { display: grid; grid-template-columns: 1fr auto; align-items: center; padding: 14px 5%; }
+  .brand { font-size: 18px; letter-spacing: 1px; }
+  .brand-symbol { width: 34px; height: 34px; }
+  .mobile-menu-toggle { display: inline-flex; align-items: center; justify-content: center; }
+  .header-tools { grid-column: 1 / -1; justify-content: space-between; gap: 12px; }
+  .header-access { flex: 1; }
+  .primary-navigation { display: none; grid-column: 1 / -1; order: 3; width: 100%; padding: 8px 0 0; gap: 0; }
+  .primary-navigation.is-open { display: flex; flex-direction: column; align-items: stretch; }
+  .primary-navigation a { padding: 10px 12px; border-top: 1px solid #426075; }
+  .private-main .access-section { padding: 12px 5% 48px; }
+  .private-main .access-card { padding: 22px; }
+}
+
+.access-help a { display: inline-flex; align-items: center; min-height: 44px; color: #087c78; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+
+/* Cabecera persistente: compensar su altura real al navegar por anclajes. */
+html { scroll-padding-top: calc(var(--header-height, 140px) + 12px); }
+.header { position: sticky; top: 0; z-index: 100; box-shadow: 0 3px 14px #091a2c22; }
+@media (max-width: 700px) {
+  .header { max-height: 100dvh; overflow-y: auto; }
+}

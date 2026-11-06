@@ -10,7 +10,7 @@ ni contraseñas en localStorage. Sesión absoluta de 8 horas.
 Las claves X-API-Key demo ya no autorizan peticiones. Servicios y reservas requieren
 una cuenta business_admin. Un super_admin no puede usar esa cuenta para operar
 como un cliente. La dependencia require_super_admin protege el panel administrativo de SPEC-008.
-El panel de cliente, registro público, recuperación de contraseña y MFA todavía no existen.
+El panel de cliente está disponible en SPEC-009. Registro público, recuperación de contraseña y MFA todavía no existen.
 
 ## Preparar desarrollo habitual (pasos explícitos, no automáticos)
 

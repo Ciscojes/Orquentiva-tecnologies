@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import "./App.css";
 import ContactForm from "./components/ContactForm";
 import AccessPanel from "./components/AccessPanel";
@@ -8,9 +8,10 @@ import type { Language } from "./services";
 // Traducciones de toda la página
 const translations = {
   es: {
-    navigation: ["Inicio", "Servicios", "Soluciones", "Nosotros", "Contacto", "Acceso"],
+    navigation: ["Inicio", "Servicios", "Soluciones", "Nosotros", "Contacto"],
 
     navLabel: "Navegación principal",
+    access: "Acceso clientes", panel: "Mi panel", menu: "Menú", back: "Volver al sitio",
     homeLabel: "Inicio de ORQENTIVA",
 
     tagline: "Tecnología para empresas que evolucionan",
@@ -44,9 +45,10 @@ const translations = {
   },
 
   en: {
-    navigation: ["Home", "Services", "Solutions", "About", "Contact", "Sign in"],
+    navigation: ["Home", "Services", "Solutions", "About", "Contact"],
 
     navLabel: "Main navigation",
+    access: "Client access", panel: "My dashboard", menu: "Menu", back: "Back to website",
     homeLabel: "ORQENTIVA Home",
 
     tagline: "Technology for evolving businesses",
@@ -80,10 +82,64 @@ const translations = {
 };
 
 // Identificadores de las secciones
-const anchors = ["home", "services", "solutions", "about", "contact", "access"];
+const anchors = ["home", "services", "solutions", "about", "contact"];
+const privateAnchors = new Set(["#login", "#panel", "#access", "#client-services", "#client-hours", "#client-bookings"]);
 
 function App() {
   const [year] = useState(() => new Date().getFullYear());
+  const [hash, setHash] = useState(() => window.location.hash);
+  const [hasSession, setHasSession] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
+  const privateView = privateAnchors.has(hash);
+  const onSessionChange = useCallback((active: boolean) => {
+    setHasSession(active);
+    const current = window.location.hash;
+    const target = active && ["#login", "#access"].includes(current) ? "#panel"
+      : !active && privateAnchors.has(current) && current !== "#login" ? "#login" : null;
+    if (target) {
+      window.history.replaceState(null, "", target);
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
+    }
+  }, []);
+
+  useEffect(() => {
+    const header = headerRef.current;
+    if (!header) return;
+    const measure = () => document.documentElement.style.setProperty("--header-height", `${Math.ceil(header.getBoundingClientRect().height)}px`);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(header);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const navigate = () => { setHash(window.location.hash); setMenuOpen(false); };
+    window.addEventListener("hashchange", navigate);
+    return () => window.removeEventListener("hashchange", navigate);
+  }, []);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      if (headerRef.current) document.documentElement.style.setProperty("--header-height", `${Math.ceil(headerRef.current.getBoundingClientRect().height)}px`);
+      if (["#login", "#panel", "#access"].includes(hash)) window.scrollTo({top:0, behavior:"instant"});
+      else document.getElementById(hash.slice(1))?.scrollIntoView();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [hash]);
+
+  useEffect(() => {
+    if (privateView) return;
+    const controller = new AbortController();
+    let alive = true;
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    fetch("/auth/me", {credentials:"same-origin", cache:"no-store", signal:controller.signal})
+      .then(response => { if (alive) setHasSession(response.ok); })
+      .catch(() => { if (alive) setHasSession(false); })
+      .finally(() => clearTimeout(timeout));
+    return () => { alive=false; clearTimeout(timeout); controller.abort(); };
+  }, [privateView]);
   // Estado global del idioma de la página
   const [language, setLanguage] = useState<Language>(() => {
     try {
@@ -114,20 +170,26 @@ function App() {
   return (
     <>
       {/* CABECERA Y NAVEGACIÓN */}
-      <header className="header">
+      <header ref={headerRef} className="header" onKeyDown={event => {
+        if (event.key === "Escape" && menuOpen) { setMenuOpen(false); menuButton.current?.focus(); }
+      }}>
         <a href="#home" className="brand" aria-label={t.homeLabel}>
           <span className="brand-symbol">O</span>
           <span>ORQENTIVA</span>
         </a>
 
-        <nav aria-label={t.navLabel}>
+        <button ref={menuButton} type="button" className="mobile-menu-toggle" aria-expanded={menuOpen}
+          aria-controls="primary-navigation" onClick={() => setMenuOpen(value => !value)}>{t.menu}</button>
+        <nav id="primary-navigation" className={menuOpen ? "primary-navigation is-open" : "primary-navigation"} aria-label={t.navLabel}>
           {t.navigation.map((name, index) => (
-            <a key={anchors[index]} href={`#${anchors[index]}`}>
+            <a key={anchors[index]} href={`#${anchors[index]}`} onClick={() => setMenuOpen(false)}>
               {name}
             </a>
           ))}
         </nav>
 
+        <div className="header-tools">
+          <a className="header-access" href={hasSession ? "#panel" : "#login"} onClick={() => setMenuOpen(false)}>{hasSession ? t.panel : t.access}</a>
         {/* SELECTOR DE IDIOMAS */}
         <div
           className="language-switch"
@@ -152,9 +214,14 @@ function App() {
             EN
           </button>
         </div>
+        </div>
       </header>
 
-      <main>
+      <main className={privateView ? "private-main" : "public-main"}>
+        {privateView ? <>
+          <div className="private-breadcrumb"><a href="#home">← {t.back}</a></div>
+          <AccessPanel language={language} locationHash={hash} onSessionChange={onSessionChange} />
+        </> : <>
         {/* SECCIÓN PRINCIPAL */}
         <section className="hero" id="home">
           <div className="hero-content">
@@ -220,7 +287,7 @@ function App() {
 
           <ContactForm language={language} />
         </section>
-        <AccessPanel language={language} />
+        </>}
       </main>
 
       {/* PIE DE PÁGINA */}

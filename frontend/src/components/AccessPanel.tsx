@@ -1,26 +1,27 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import AdminDashboard from "./AdminDashboard";
+import ClientDashboard from "./ClientDashboard";
 import type { Language } from "../services";
 
 type Account = { id: number; email: string; role: "super_admin" | "business_admin"; business_id: string | null };
 const text = {
   es: {
-    title: "Acceso a ORQENTIVA", intro: "Ingresa con la cuenta asignada a tu empresa o a la administración de ORQENTIVA.",
+    title: "Acceso a ORQENTIVA", intro: "Ingresa con la cuenta asignada a tu negocio.",
     email: "Correo electrónico", password: "Contraseña", login: "Iniciar sesión", logout: "Cerrar sesión", busy: "Procesando…",
     checking: "Comprobando sesión…", invalid: "Correo o contraseña incorrectos.", limited: "Demasiados intentos. Espera un minuto antes de volver a intentarlo.",
     error: "No se pudo completar la operación. Comprueba la conexión e inténtalo de nuevo.", blocked: "El acceso no está habilitado para esta dirección. Contacta con el administrador.",
     welcome: "Sesión iniciada", admin: "Administrador de ORQENTIVA", business: "Administrador de negocio", company: "Empresa",
     next: "Tu acceso está verificado. Las herramientas de gestión de tu panel se incorporarán en el siguiente incremento.",
-    retry: "Comprobar sesión", help: "Si todavía no tienes cuenta, solicita el acceso al administrador de ORQENTIVA.", signedOut: "Has cerrado la sesión.",
+    retry: "Comprobar sesión", help: "¿Todavía no tienes cuenta?", consultation: "Solicitar asesoría", signedOut: "Has cerrado la sesión.",
   },
   en: {
-    title: "Access ORQENTIVA", intro: "Sign in with the account assigned to your business or to ORQENTIVA administration.",
+    title: "Access ORQENTIVA", intro: "Sign in with the account assigned to your business.",
     email: "Email address", password: "Password", login: "Sign in", logout: "Sign out", busy: "Processing…",
     checking: "Checking session…", invalid: "Incorrect email or password.", limited: "Too many attempts. Wait a minute before trying again.",
     error: "The operation could not be completed. Check your connection and try again.", blocked: "Access is not enabled for this address. Contact the administrator.",
     welcome: "Signed in", admin: "ORQENTIVA administrator", business: "Business administrator", company: "Business",
     next: "Your access is verified. Dashboard management tools will be added in the next increment.",
-    retry: "Check session", help: "If you do not have an account yet, request access from your ORQENTIVA administrator.", signedOut: "You have signed out.",
+    retry: "Check session", help: "Don’t have an account yet?", consultation: "Request a consultation", signedOut: "You have signed out.",
   },
 };
 type Notice = "invalid" | "limited" | "error" | "blocked" | "signedOut" | null;
@@ -35,7 +36,7 @@ async function readAccount(response: Response): Promise<Account> {
   return account;
 }
 
-export default function AccessPanel({ language }: { language: Language }) {
+export default function AccessPanel({ language, locationHash, onSessionChange }: { language: Language; locationHash: string; onSessionChange: (active: boolean) => void }) {
   const t = text[language];
   const [account, setAccount] = useState<Account | null>(null);
   const [checking, setChecking] = useState(true);
@@ -64,8 +65,13 @@ export default function AccessPanel({ language }: { language: Language }) {
   }, []);
 
   useEffect(() => {
+    if (!checking) onSessionChange(account !== null);
+  }, [account, checking, locationHash, onSessionChange]);
+
+  useEffect(() => {
     if (account) welcome.current?.focus();
-  }, [account]);
+    else if (!checking) document.getElementById("access-title")?.focus({preventScroll:true});
+  }, [account, checking]);
 
   async function refreshSession() {
     if (busy) return;
@@ -105,23 +111,22 @@ export default function AccessPanel({ language }: { language: Language }) {
   }
 
   return <section className="access-section" id="access" aria-labelledby="access-title">
-    <h2 id="access-title">{t.title}</h2><p>{t.intro}</p>
+    <h1 id="access-title" tabIndex={-1}>{t.title}</h1><p>{t.intro}</p>
     {checking ? <p role="status">{t.checking}</p> : account ?
       <><div className="access-card" aria-busy={busy}>
         <h3 ref={welcome} tabIndex={-1}>{t.welcome}</h3>
         <p>{account.email}</p><p><strong>{account.role === "super_admin" ? t.admin : t.business}</strong></p>
         {account.business_id && <p>{t.company}: {account.business_id}</p>}
-        {account.role === "business_admin" && <p>{t.next}</p>}
         <button className="btn btn-primary" onClick={logout} disabled={busy}>{busy ? t.busy : t.logout}</button>
         <button className="access-retry" onClick={refreshSession} disabled={busy}>{t.retry}</button>
-      </div>{account.role === "super_admin" && <AdminDashboard key={account.id} language={language} onSessionEnded={endSession} />}</> :
+      </div>{account.role === "super_admin" && <AdminDashboard key={account.id} language={language} onSessionEnded={endSession} />}{account.role === "business_admin" && <ClientDashboard key={account.id} language={language} onSessionEnded={endSession} />}</> :
       <form className="contact-form" onSubmit={login} aria-busy={busy}>
         <label htmlFor="login-email">{t.email}</label>
         <input id="login-email" type="email" autoComplete="username" required maxLength={254} value={email} onChange={e => setEmail(e.target.value)} disabled={busy} />
         <label htmlFor="login-password">{t.password}</label>
         <input id="login-password" type="password" autoComplete="current-password" required maxLength={128} value={password} onChange={e => setPassword(e.target.value)} disabled={busy} />
         <button type="submit" disabled={busy}>{busy ? t.busy : t.login}</button>
-        <p>{t.help}</p>
+        <p className="access-help">{t.help} <a href="#contact">{t.consultation}</a></p>
         {notice === "error" && <button type="button" onClick={refreshSession} disabled={busy}>{t.retry}</button>}
       </form>}
     {notice && <p className={notice === "signedOut" ? "access-success" : "access-error"} role={notice === "signedOut" ? "status" : "alert"}>{t[notice]}</p>}
