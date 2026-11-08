@@ -1,8 +1,9 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
-// https://vite.dev/config/
+const apiTarget = process.env.ORQENTIVA_API_TARGET || 'http://127.0.0.1:8001'
+// La demostración aislada puede usar otro backend sin alterar el desarrollo habitual.
 export default defineConfig({
   plugins: [react()],
-  server: { proxy: { '/book': 'http://127.0.0.1:8001', '/leads': 'http://127.0.0.1:8001', '/auth': 'http://127.0.0.1:8001', '/admin': 'http://127.0.0.1:8001', '/client': 'http://127.0.0.1:8001' } },
+  server: { proxy: { '/book': apiTarget, '/leads': apiTarget, '/auth': apiTarget, '/admin': apiTarget, '/client': apiTarget } },
 })

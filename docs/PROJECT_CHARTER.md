@@ -29,3 +29,7 @@ de SQLite. El traslado de datos históricos se ejecuta por separado y explícita
 
 ## Reglas de ingeniería
 Especificación antes de nuevas funcionalidades, pytest en CI, separación de datos por empresa, secretos fuera del repositorio, pruebas de regresión, documentación incremental.
+
+## Estado de consolidación del MVP
+
+El roadmap anterior describe la planificación histórica. El MVP actual incorpora paneles, agenda por profesional, chat con LangGraph y recuperación extractiva por negocio. No hay LLM ni RAG generativo. La hipótesis comparativa y p95 siguen sin evaluarse. Consultar tfm/VERIFICACION.md y tfm/ENTREGA.md para los resultados y entregables actuales.

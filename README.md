@@ -1,99 +1,124 @@
-# ORQENTIVA AI — MVP TFM con paneles de administrador y cliente (SPEC-009)
+# ORQENTIVA AI
 
-## Captación de leads
+MVP académico de una aplicación web para gestionar servicios, profesionales y reservas de varios negocios. Incluye un asistente conversacional guiado y consultas de políticas con referencias a documentos publicados.
 
-`POST /leads` acepta nombre, correo, empresa opcional, servicio y mensaje.
-Los servicios permitidos son `agents`, `automation`, `growth` y `saas`.
-No requiere claves de las empresas ni ofrece listado público.
-Devuelve HTTP 201 al guardar; 422 ante datos inválidos; 429 ante exceso de envíos;
-503 si no puede guardar. El formulario React permite enviar en español e inglés.
+## Problema y objetivo
 
-Para el desarrollo, ejecutar la API en `127.0.0.1:8001` y, desde `frontend`,
-`npm install` y `npm run dev`. Vite reenvía `/leads` a la API.
-En producción debe configurarse una ruta del mismo origen hacia el backend;
-`vite preview` no sustituye esa configuración.
+Los pequeños negocios necesitan atender consultas y coordinar citas sin mezclar información de sus clientes. ORQENTIVA centraliza catálogo, horarios y reservas. El caso de demostración utiliza dos barberías ficticias: Alfa y Beta. El proyecto demuestra desarrollo full stack, control de acceso y verificación de operaciones mediante pruebas. No se han medido mejoras de ventas o productividad en negocios reales.
 
-La conexión PostgreSQL usa la configuración local existente y `POSTGRES_PASSWORD`
-en `.env`. `DATABASE_URL` permite seleccionar explícitamente otra base de datos.
-No colocar credenciales en React ni registrar estas variables.
-Los tests fuerzan bases SQLite temporales y no necesitan `.env`.
+## Funcionalidades implementadas
 
-`/business/me`, `/services`, `/appointments` y `/leads` utilizan la misma base
-SQLAlchemy/PostgreSQL configurada. El arranque no crea tablas ni datos demo.
-SQLite se utiliza únicamente en pruebas aisladas y como fuente histórica explícita.
-El límite de leads es básico, en memoria y por proceso (5 envíos/IP/minuto).
-Para varias instancias se necesita un contador compartido y proxies de confianza configurados.
+- Página comercial ES/EN y formulario de contacto que guarda solicitudes de posibles clientes.
+- Inicio y cierre de sesión, roles super_admin y business_admin, sesiones revocables y contraseñas con Argon2.
+- Administrador: crear y activar negocios, habilitar agenda y crear cuentas de negocio.
+- Cliente: gestionar servicios, duración, horarios, profesionales y documentos. Consultar sus reservas.
+- Enlace público por negocio con disponibilidad y confirmación de citas.
+- Chat guiado con LangGraph: solicita datos, consulta disponibilidad y prepara una propuesta. La interfaz solicita confirmación y llama al backend para guardar la reserva.
+- Recuperación léxica de párrafos publicados por negocio, con título y número de párrafo. Ante evidencia insuficiente, pide consultar al negocio.
+- Reintentos idempotentes, control de solapamientos y separación de datos por negocio.
 
-Ver `docs/PERSISTENCIA_UNIFICADA.md` y `specs/005-unified-persistence/`.
+El chat actual no invoca un LLM, no usa embeddings ni genera una respuesta libre a partir de documentos. LangGraph organiza un flujo con reglas. La consulta documental es extractiva. Los nombres históricos «IA» o «RAG» en algunas especificaciones no implican integración de un modelo generativo.
 
-Las reservas se guardan con fecha UTC. La restricción única de PostgreSQL impide
-duplicados por empresa e instante, incluso con solicitudes simultáneas y offsets diferentes.
-El listado se ordena por instante y los nombres se validan después de quitar espacios.
+## Tecnologías
 
-Los registros del antiguo `orqentiva.db` no se copian automáticamente. Para revisar
-un traslado sin escribir en la base de destino:
+| Capa | Tecnología y finalidad |
+| --- | --- |
+| Interfaz | React, TypeScript y Vite para página, paneles y chat |
+| API | Python y FastAPI, validación con Pydantic |
+| Datos | SQLAlchemy, PostgreSQL y migraciones Alembic |
+| Conversación | LangGraph y reglas de interpretación |
+| Autenticación | pwdlib/Argon2, sesiones opacas en cookie HttpOnly |
+| Verificación | pytest, TestClient, PostgreSQL temporal, TypeScript y oxlint |
 
-```powershell
-python scripts/import_legacy_sqlite.py --source .\orqentiva.db
-```
+Las versiones de frontend se resuelven con frontend/package-lock.json. requirements.txt acota las dependencias Python y fija LangGraph. La evaluación se ejecutó con Python 3.13.5. La demostración local opcional usa SQLite para facilitar la revisión, mientras que el desarrollo habitual usa PostgreSQL.
 
-El script muestra solo cantidades y detecta conflictos. `--apply` realiza un traslado
-explícito en una transacción; requiere revisar previamente la base de destino y la simulación.
-No borra el archivo fuente ni reemplaza datos existentes.
+## Instalación y ejecución
 
-Para repetir la integración en una instancia PostgreSQL temporal independiente:
+Requisitos: Python 3.13, Node.js/npm compatible con el proyecto y, para el modo PostgreSQL, PostgreSQL 17. Descargar o clonar el código y abrir PowerShell en su raíz.
 
 ```powershell
-python scripts/verify_postgres.py --postgres-bin "C:\Program Files\PostgreSQL\17\bin"
-```
-
-El script no lee `.env`, inicia un servidor limitado a 127.0.0.1 con un puerto
-temporal, prueba migraciones y persistencia y lo detiene al terminar.
-
-Prototipo educativo del TFM y futuro SaaS de ORQENTIVA Technologies.
-
-## Qué funciona hoy
-- FastAPI con OpenAPI interactivo (`/docs`).
-- Dos negocios independientes (Alfa y Beta), datos iniciales y catálogo de servicios.
-- Reservas con bloqueo de mismo horario dentro de cada negocio.
-- Aislamiento por empresa en las consultas.
-- Pruebas automatizadas.
-
-> SPEC-007 sustituye las claves demo por cuentas y sesiones revocables. La publicación pública sigue pendiente de configuración HTTPS, revisión del proxy y límites de uso. Ver [Autenticación](docs/AUTENTICACION.md).
-
-## Cómo ejecutarlo (Windows PowerShell)
-```powershell
-cd orqentiva-ai-v0
-py -m venv .venv
+py -3.13 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
+Set-Location frontend
+npm ci
+Set-Location ..
 ```
 
-En una base nueva de desarrollo configurada para este proyecto, preparar explícitamente
-el esquema y los datos demo antes de iniciar la API:
+### Demostración aislada para el evaluador
+
+```powershell
+python scripts/prepare_tfm_demo.py
+.\scripts\start_tfm_demo.ps1 -Component api
+```
+
+En otra terminal, desde la raíz:
+
+```powershell
+.\scripts\start_tfm_demo.ps1 -Component web
+```
+
+Abrir http://127.0.0.1:5179/#access. El backend usa el puerto 8002. El preparador crea tfm-demo.sqlite3 con migraciones, dos negocios, usuarios ficticios, profesionales, horarios y políticas. Si la base ya existe, se detiene sin sobrescribirla. No lee .env ni modifica la base habitual.
+
+Accesos y recorrido: [Guía de demostración](tfm/ACCESO_DEMO.md).
+
+### Desarrollo con PostgreSQL
+
+Crear una base vacía dedicada a ORQENTIVA y configurar DATABASE_URL como variable de entorno, o POSTGRES_PASSWORD en un .env local según app/database.py. No subir ese archivo. DATABASE_URL prevalece sobre .env. La configuración predeterminada de desarrollo utiliza usuario orqentiva, base orqentiva_db, host 127.0.0.1 y puerto 5434.
 
 ```powershell
 python -m alembic upgrade head
 python seed.py
-python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8001
+python scripts/create_user.py --email admin@example.com --role super_admin
+python scripts/create_user.py --email alfa@example.com --role business_admin --business-id alfa
+python scripts/create_user.py --email beta@example.com --role business_admin --business-id beta
+.\scripts\start_development.ps1 -Component api
 ```
-Abrir http://127.0.0.1:8001/docs
 
-Para probar recursos privados, crea una cuenta e inicia sesión siguiendo [Autenticación](docs/AUTENTICACION.md). Las antiguas claves `X-API-Key` ya no conceden acceso.
+Las contraseñas se solicitan sin mostrarlas. En otra terminal ejecutar .\scripts\start_development.ps1 -Component web y abrir http://127.0.0.1:5178/#access. El backend habitual usa 8001. Seed crea catálogo inicial sin duración y sin profesionales: configurar estos datos desde el panel antes de reservar. Las cuentas del modo demostración no se crean en PostgreSQL automáticamente.
 
-## Tests
+## Estructura
+
+```text
+app/                    API, modelos, seguridad y agenda
+  routes/               Autenticación, paneles, reservas, chat y documentos
+frontend/src/           Interfaz React y estilos
+alembic/versions/       Historial de migraciones
+scripts/                Preparación, arranque y validación
+tests/                  Pruebas aisladas y 30 escenarios de aceptación
+specs/                  Especificaciones y decisiones por incremento
+docs/                   Arquitectura, operación y resultados
+tfm/                    Presentación, guion y lista de entrega
+seed.py                 Dos negocios y catálogo ficticio inicial
+requirements.txt        Dependencias Python
+```
+
+## Pruebas y evidencia
+
 ```powershell
 python -m pytest -q
+python scripts/verify_postgres.py --postgres-bin "C:\Program Files\PostgreSQL\17\bin"
+Set-Location frontend
+npm run build
+npm run lint
 ```
 
-## Acceso y siguiente incremento
+Las pruebas pytest utilizan SQLite temporal. verify_postgres inicia un PostgreSQL temporal limitado a este equipo, valida migraciones y flujos, y lo detiene. No utiliza .env ni la base habitual.
 
-Ver [Autenticación](docs/AUTENTICACION.md) para migrar explícitamente la base de
-desarrollo, crear cuentas sin exponer contraseñas y configurar el origen local.
-La página corporativa, servicios comerciales ES/EN y POST /leads siguen públicos.
+Resultado registrado: 137 pruebas aprobadas, incluidas 30 de aceptación. También se comprobó PostgreSQL temporal y la compilación y lint del frontend. Consulte [Verificación de entrega](tfm/VERIFICACION.md) y [Evaluación inicial](docs/evaluation-012/informe-evaluacion.md) para alcance, fechas y límites.
 
-El acceso de Super Admin incluye gestión de negocios, estado y creación de cuentas.
-Ver [Panel administrativo](docs/PANEL_ADMINISTRADOR.md). El cliente ya puede gestionar servicios, duración y horarios y consultar reservas: ver [Panel de cliente](docs/PANEL_CLIENTE.md). LangGraph y RAG están pendientes; consultar [Alcance del MVP del TFM](docs/MVP_TFM.md).
+## Arquitectura, seguridad y límites
 
-Las lecciones anteriores que usen claves demo describen versiones históricas.
-El contrato actual de autenticación es SPEC-007.
+Consulte [Arquitectura](docs/ARQUITECTURA_TFM.md). Las autorizaciones se comprueban en la API. Las fechas se guardan en UTC y la agenda se presenta en horario de Costa Rica. No hay registro público, recuperación de contraseña ni MFA. Los límites de uso se mantienen en memoria por proceso. La publicación exige HTTPS y configuración de origen/proxy. La demo con contraseña conocida es exclusivamente local y contiene datos ficticios.
+
+No se incluyen WhatsApp, voz, pagos, suscripciones, n8n ni un modelo generativo. La evaluación es de un MVP y no acredita disponibilidad o seguridad de producción.
+
+## Material de entrega
+
+- [Presentación PowerPoint](tfm/ORQENTIVA-TFM.pptx).
+- [Guion y recorrido de grabación](tfm/GUION_VIDEO.md).
+- [Accesos de prueba](tfm/ACCESO_DEMO.md).
+- [Lista de entrega y enlaces](tfm/ENTREGA.md).
+- [Plan de publicación](tfm/DESPLIEGUE.md).
+
+Repositorio público: pendiente de publicación por el autor. Vídeo: pendiente de grabación y enlace. Despliegue público: no realizado. No se ha enviado el formulario del máster. La presentación adjunta satisface la opción de incluir el archivo en el código; el formulario requiere completar su URL de acceso.

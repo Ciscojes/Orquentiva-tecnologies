@@ -211,6 +211,8 @@ def main():
                 with SessionLocal() as session:
                     assert len(session.scalars(select(Lead)).all()) == 5
                 print("OK: límite de envíos sin filas adicionales")
+                from scripts.verify_tfm_flows import verify
+                verify(client, alfa, beta)
                 assert client.post("/auth/logout", headers=alfa).status_code == 204
                 assert client.get("/auth/me", headers=alfa).status_code == 401
                 assert client.get("/auth/me", headers=beta).status_code == 200
