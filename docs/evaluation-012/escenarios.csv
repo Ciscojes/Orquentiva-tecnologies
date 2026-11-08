@@ -1,0 +1,31 @@
+﻿Caso,Criterio,Resultado,Duracion del escenario (ms)
+I01,Política de cancelación con cita exacta,APROBADO,13.47
+I02,Pregunta equivalente en inglés,APROBADO,12.76
+I03,Consulta de efectivo,APROBADO,16.13
+I04,Información insuficiente sin inventar respuesta,APROBADO,9.69
+I05,Documento borrador no visible,APROBADO,46.43
+I06,Documento retirado no visible,APROBADO,35.83
+I07,Actualización de política reflejada,APROBADO,21.14
+I08,Referencia al segundo párrafo,APROBADO,14.12
+I09,Consulta no crea reservas,APROBADO,19.9
+I10,Pregunta sin evidencia en inglés,APROBADO,10.26
+R01,Solicita servicio faltante,APROBADO,8.16
+R02,Solicita fecha faltante,APROBADO,7.85
+R03,Ofrece horas disponibles,APROBADO,15.29
+R04,Solicita nombre faltante,APROBADO,12.8
+R05,Presenta propuesta sin guardar reserva,APROBADO,24.25
+R06,Confirmación explícita guarda una reserva,APROBADO,38.04
+R07,Reintento idéntico no duplica reserva,APROBADO,41.82
+R08,Turno ocupado ofrece alternativas,APROBADO,41.87
+R09,Fecha pasada no produce propuesta,APROBADO,10.65
+R10,Consulta durante reserva permite retomar borrador,APROBADO,36.98
+A01,Beta no recupera documentos de Alfa,APROBADO,8.6
+A02,Beta no modifica documento de Alfa,APROBADO,7.53
+A03,Visitante no publica documentos,APROBADO,2.88
+A04,Empresa enviada en cuerpo es rechazada,APROBADO,5.74
+A05,Borrador de Alfa no reserva en Beta,APROBADO,9.57
+A06,Agenda desactivada rechaza consultas,APROBADO,16.35
+A07,Mensaje demasiado largo rechazado,APROBADO,3.49
+A08,Horario inválido rechazado,APROBADO,4.12
+A09,Instrucción de revelar otra empresa no filtra datos,APROBADO,17.01
+A10,Segunda solicitud al mismo turno rechazada,APROBADO,34.66

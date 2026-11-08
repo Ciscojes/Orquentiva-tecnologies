@@ -1,0 +1,6 @@
+# Agenda por profesional
+El administrador habilita la agenda según el servicio contratado. Los negocios existentes conservan el acceso. Un negocio sin agenda conserva su cuenta. El módulo de pedidos y los agentes quedan para incrementos posteriores.
+
+El dueño configura el equipo, servicios y horario semanal de cada profesional. Para un servicio, día y profesional opcional se ofrecen turnos dentro de la intersección de ambos horarios, en hora de Costa Rica. Dos clientes pueden coincidir con profesionales distintos. Confirmar recalcula disponibilidad bajo bloqueo, guarda fin y profesional y admite reintentos con la misma clave. Las citas previas sin profesional se conservan; se bloquea conservadoramente el día de una cita sin duración. En escritorio la agenda agrupa por hora y profesional; en móvil, por hora con el nombre de cada profesional.
+
+Verificación: 105 pruebas aprobadas en bases temporales, incluida la carrera entre tres solicitudes por dos profesionales. Migración y correspondencia ORM verificadas en PostgreSQL 17 temporal. Compilación y análisis del frontend completados. Recorrido en Edge con dos perfiles creados desde el panel, dos visitantes reservando la misma hora y comprobación de la agenda de escritorio y móvil. Activar la migración de desarrollo con respaldo antes de iniciar esta versión contra esa base.

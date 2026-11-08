@@ -1,0 +1,11 @@
+{
+  "adminLogin": true,
+  "clientLogin": true,
+  "reservationConfirmed": true,
+  "reservationInDashboard": true,
+  "policyDuringReservation": true,
+  "betaPolicyIsolated": true,
+  "mobileWidth": 390,
+  "horizontalOverflow": false,
+  "pageErrors": []
+}
