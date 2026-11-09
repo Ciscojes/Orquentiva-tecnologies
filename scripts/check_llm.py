@@ -23,6 +23,14 @@ print(f"Mensaje de prueba: {MESSAGE}")
 result = llm.extract(MESSAGE, MENU, datetime.now(LOCAL).date(), "es")
 print("Resultado:", result or "vacío (revisa el aviso de arriba)")
 
+if result:
+    print("\nPrueba de RAG")
+    paragraphs = [{"id": "p1", "title": "Cancelaciones", "paragraph": 1, "quote": "Para cancelar, avisa con 24 horas de anticipación."},
+                  {"id": "p2", "title": "Pagos", "paragraph": 1, "quote": "Aceptamos efectivo y tarjeta."}]
+    question = "Si al final no puedo ir, ¿qué tengo que hacer?"
+    print(f"Pregunta: {question}")
+    print("Respuesta:", llm.answer_from_sources(question, paragraphs, "es") or "rechazada o vacía (revisa el aviso de arriba)")
+
 if not result:
     # Lista los modelos que tu clave puede usar, para elegir un LLM_MODEL válido.
     base = os.getenv("LLM_BASE_URL", llm.DEFAULT_BASE_URL).rstrip("/")

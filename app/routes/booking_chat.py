@@ -184,7 +184,7 @@ workflow = builder.compile()
 def run_chat(business_id: str, turn: Turn, session, use_llm: bool = False):
     menu = catalog(business_id, session)
     if turn.mode == 'knowledge' or policy_question(turn.message):
-        return answer(session, business_id, turn.message, turn.language, menu['name'])
+        return answer(session, business_id, turn.message, turn.language, menu['name'], use_llm)
     with tracing_context(enabled=False):
         result = workflow.invoke({"business":business_id,"turn":turn,"menu":menu,"use_llm":use_llm},context=session)
     return {key:result[key] for key in ("draft","reply","options","proposal")}

@@ -38,7 +38,13 @@ La clave de solicitud evita duplicados por reintento. Una nueva solicitud a un t
 
 ## Consulta documental
 
-Los documentos tienen empresa, título, texto y estado publicado. La recuperación filtra empresa y publicación antes de puntuar párrafos. Normaliza texto y usa términos/alias y cobertura. Devuelve citas literales, título y número de párrafo. No utiliza embeddings, base vectorial, LLM ni generación aumentada. Puede no reconocer paráfrasis complejas. No debe presentarse como un sistema generativo completo.
+Los documentos tienen empresa, título, texto y estado publicado. La consulta sigue el patrón RAG (SPEC-015):
+
+1. **Recuperación.** Filtra empresa y publicación antes de puntuar párrafos. Normaliza texto y usa términos/alias y cobertura. Si no hay coincidencias y todos los párrafos del negocio caben en 6 000 caracteres, se pasan todos como candidatos.
+2. **Generación.** Con el LLM activo, el modelo recibe la pregunta y solo los candidatos de ese negocio, y devuelve una respuesta breve con los ids de los párrafos usados.
+3. **Validación.** El servidor rechaza citas a párrafos no enviados y cifras que no aparezcan en los párrafos citados. Si el modelo no responde, falla o se rechaza su respuesta, se devuelve el párrafo literal (modo extractivo).
+
+No utiliza embeddings ni base vectorial: un negocio publica pocos párrafos y la recuperación léxica más el LLM cubre sinónimos sin costos añadidos. Las respuestas siempre muestran título y número de párrafo.
 
 ## Seguridad y límites
 

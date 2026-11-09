@@ -15,13 +15,21 @@ Los pequeños negocios necesitan atender consultas y coordinar citas sin mezclar
 - Enlace público por negocio con disponibilidad y confirmación de citas.
 - Chat con LangGraph: solicita datos, consulta disponibilidad y prepara una propuesta. La interfaz solicita confirmación y llama al backend para guardar la reserva.
 - Interpretación opcional con LLM (API compatible con OpenAI): entiende frases como «la semana que viene a media mañana con la chica de siempre». El modelo solo propone campos; el servidor los valida contra el catálogo y nunca reserva sin confirmación.
-- Recuperación léxica de párrafos publicados por negocio, con título y número de párrafo. Ante evidencia insuficiente, pide consultar al negocio.
+- Consultas de políticas con RAG: recupera los párrafos publicados del negocio y, con el LLM activo, redacta la respuesta citando título y número de párrafo. Sin LLM devuelve el párrafo literal. Ante evidencia insuficiente, pide consultar al negocio.
 - Reintentos idempotentes, control de solapamientos y separación de datos por negocio.
 - Piloto de WhatsApp (webhook de Meta con firma verificada y worker de procesamiento) preparado para un número de prueba. La conexión con Meta está pendiente y no está publicada. Ver [configuración del piloto](docs/WHATSAPP_PILOT.md) y [SPEC-013](specs/013-whatsapp-booking/spec.md).
 
 ### Cómo usa la IA el chat
 
 El grafo de LangGraph tiene tres nodos: `understand` (LLM opcional), `interpret` (reglas) y `availability` (agenda). Las reglas tienen prioridad y el LLM completa lo que no reconocen. Cada campo propuesto por el modelo se valida contra el catálogo del negocio; si el LLM falla, tarda más de 8 s o se supera el límite de 20 llamadas por IP y minuto, el chat sigue solo con reglas. Detalle en [SPEC-014](specs/014-llm-interpretation/spec.md).
+
+Las preguntas sobre el negocio usan RAG ([SPEC-015](specs/015-rag/spec.md)):
+
+1. **Recuperación:** búsqueda léxica en los párrafos publicados del negocio. Si no encuentra nada y los documentos caben en 6 000 caracteres, el LLM los recibe todos para entender sinónimos («¿me regresan la plata si falto?»).
+2. **Generación:** el LLM redacta una respuesta breve usando solo esos párrafos e indica cuáles usó.
+3. **Validación:** se descarta la respuesta si cita párrafos que no recibió o si contiene cifras que no aparecen en ellos. En ese caso, o sin LLM, se muestra el párrafo literal.
+
+El chat marca las respuestas generadas («Respuesta redactada con IA a partir de:») y siempre muestra las fuentes.
 
 Para activarlo, definir antes de arrancar la API:
 
@@ -33,7 +41,7 @@ $env:LLM_BASE_URL = "https://api.groq.com/openai/v1"
 python scripts/check_llm.py   # comprueba la clave y lista los modelos si falla
 ```
 
-Sin estas variables el comportamiento es determinista. La consulta de políticas es extractiva: devuelve párrafos literales, sin embeddings ni texto generado. El proyecto se desarrolló con especificaciones por incremento (`specs/`) y asistentes de IA como apoyo de ingeniería.
+Sin estas variables el comportamiento es determinista y la consulta de políticas devuelve párrafos literales. La recuperación no usa embeddings: los documentos de un negocio son pocos y así no hay costos ni dependencias extra. El proyecto se desarrolló con especificaciones por incremento (`specs/`) y asistentes de IA como apoyo de ingeniería.
 
 ## Tecnologías
 
@@ -122,7 +130,7 @@ npm run lint
 
 Las pruebas pytest utilizan SQLite temporal. verify_postgres inicia un PostgreSQL temporal limitado a este equipo, valida migraciones y flujos, y lo detiene. No utiliza .env ni la base habitual.
 
-Resultado registrado: 153 pruebas aprobadas, incluidas 30 de aceptación y 6 del LLM con el modelo simulado. También se comprobó PostgreSQL temporal y la compilación y lint del frontend. Consulte la [Evaluación inicial](docs/evaluation-012/informe-evaluacion.md) para alcance, fechas y límites.
+Resultado registrado: 164 pruebas aprobadas, incluidas 30 de aceptación y 17 del LLM y del RAG con el modelo simulado. También se comprobó PostgreSQL temporal y la compilación y lint del frontend. Consulte la [Evaluación inicial](docs/evaluation-012/informe-evaluacion.md) para alcance, fechas y límites.
 
 ## Arquitectura, seguridad y límites
 
