@@ -64,7 +64,7 @@ Se puede iniciar la API completa localmente con esa variable y conectar el front
 No publicar las cuentas y contraseñas ficticias del piloto en un servidor accesible a terceros.
 
 ## 5. Operación y límites
-- Texto en español, hasta 350 caracteres por mensaje; no interpreta audios ni ofrece comprensión general con LLM.
+- Texto en español, hasta 350 caracteres por mensaje; no interpreta audios. Con LLM_API_KEY y LLM_MODEL en .env.whatsapp usa el mismo LLM y RAG que el chat web.
 - La lista muestra hasta 20 opciones de horario. También se puede escribir otra hora para consultar disponibilidad.
 - REINICIAR, CANCELAR o NO descartan el borrador, no cancelan una cita ya guardada.
 - HUMANO pausa el asistente; todavía no hay bandeja ni aviso automático a un operador.

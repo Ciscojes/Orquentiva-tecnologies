@@ -15,7 +15,7 @@ def verify(client, alfa, beta):
     response.raise_for_status()
     member=response.json()
     day=(datetime.now(LOCAL)+timedelta(days=7)).date().isoformat()
-    draft={'service_id':service['id'],'professional_id':member['id'],'day':day,'clock':'10:00','name':'Prueba TFM','step':'review'}
+    draft={'service_id':service['id'],'professional_id':member['id'],'day':day,'clock':'10:00','name':'Prueba TFM','contact':'prueba@example.com','step':'review'}
     def chat(tenant, **body):
         r=client.post(f'/book/{tenant}/chat',json=body)
         r.raise_for_status()

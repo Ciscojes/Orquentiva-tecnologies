@@ -14,6 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
 from app import llm
+from app.contact import normalize_contact
 from app.routes.client import Database
 from app.routes.leads import LeadLimiter
 from app.routes.public_booking import catalog
@@ -33,7 +34,8 @@ class Draft(BaseModel):
     day: date | None = None
     clock: str | None = Field(None, pattern=r"^(?:[01]\d|2[0-3]):[0-5]\d$")
     name: str = Field("", max_length=100)
-    step: Literal["request","service","professional","day","time","name","review"] = "request"
+    contact: str = Field("", max_length=254)
+    step: Literal["request","service","professional","day","time","name","contact","review"] = "request"
 
 
 class Turn(BaseModel):
@@ -54,6 +56,7 @@ class State(TypedDict, total=False):
     proposal: dict | None
     use_llm: bool
     hints: dict
+    ask_contact: bool
 
 
 def normalized(value):
@@ -90,6 +93,13 @@ def interpret(state: State):
             d.name = name
         elif hints.get("name"):
             d.name = hints["name"]
+        return {"draft":d}
+    if d.step == "contact" and raw:
+        try:
+            d.contact = normalize_contact(raw)
+        except ValueError:
+            return respond(d,"contact","Escribe un teléfono (por ejemplo 8888 1234) o un correo válido."
+                           if es else "Enter a phone number (for example 8888 1234) or a valid email.")
         return {"draft":d}
     services = menu["services"]
     matches = [s for s in services if has(text,s["name"])]
@@ -163,11 +173,18 @@ def lookup(state: State, runtime: Runtime[Session]):
         return respond(d,"time",f"Para el {d.day}, elige una hora disponible (Costa Rica)." if es else f"Choose an available time for {d.day} (Costa Rica).",times.keys())
     if not d.name:
         return respond(d,"name","¿A qué nombre registro la cita?" if es else "What name should I put on the booking?")
+    if state.get("ask_contact", True) and not d.contact:
+        return respond(d,"contact","¿A qué teléfono o correo te avisamos si hay cambios?" if es
+                       else "Which phone number or email should we use if anything changes?")
     stamp, ids = times[d.clock]
     professional = team[ids[0]]
     details = f"{d.name} · {services[d.service_id]['name']} · {professional['name']} · {d.day} {d.clock} (Costa Rica)"
-    return respond(d,"review",details+(". ¿Confirmas esta cita?" if es else ". Confirm this appointment?"),
-                   proposal={"service_id":d.service_id,"professional_id":professional["id"],"customer_name":d.name,"starts_at":stamp.isoformat()})
+    if d.contact:
+        details += f" · {d.contact}"
+    proposal = {"service_id":d.service_id,"professional_id":professional["id"],"customer_name":d.name,"starts_at":stamp.isoformat()}
+    if d.contact:
+        proposal["customer_contact"] = d.contact
+    return respond(d,"review",details+(". ¿Confirmas esta cita?" if es else ". Confirm this appointment?"), proposal=proposal)
 
 
 builder = StateGraph(State, context_schema=Session)
@@ -181,12 +198,13 @@ builder.add_edge("availability",END)
 workflow = builder.compile()
 
 
-def run_chat(business_id: str, turn: Turn, session, use_llm: bool = False):
+def run_chat(business_id: str, turn: Turn, session, use_llm: bool = False, ask_contact: bool = True):
     menu = catalog(business_id, session)
     if turn.mode == 'knowledge' or policy_question(turn.message):
         return answer(session, business_id, turn.message, turn.language, menu['name'], use_llm)
     with tracing_context(enabled=False):
-        result = workflow.invoke({"business":business_id,"turn":turn,"menu":menu,"use_llm":use_llm},context=session)
+        result = workflow.invoke({"business":business_id,"turn":turn,"menu":menu,"use_llm":use_llm,
+                                  "ask_contact":ask_contact},context=session)
     return {key:result[key] for key in ("draft","reply","options","proposal")}
 
 

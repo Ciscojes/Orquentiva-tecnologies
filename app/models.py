@@ -146,6 +146,8 @@ class Appointment(Base):
     service_id: Mapped[int | None] = mapped_column(ForeignKey("services.id", name="fk_booking_service"))
     ends_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     request_key: Mapped[str | None] = mapped_column(String(36))
+    # Teléfono o correo para avisar al cliente; obligatorio en las reservas públicas.
+    customer_contact: Mapped[str | None] = mapped_column(String(254))
 
 
 class Lead(Base):

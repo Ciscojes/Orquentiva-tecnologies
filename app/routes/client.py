@@ -90,7 +90,8 @@ def dashboard(business_id: Tenant, session: Database):
     bookings = []
     for row in appointments:
         stamp = row.starts_at if row.starts_at.tzinfo else row.starts_at.replace(tzinfo=timezone.utc)
-        bookings.append({"id": row.id, "customer_name": row.customer_name, "starts_at": stamp.astimezone(timezone.utc).isoformat()})
+        bookings.append({"id": row.id, "customer_name": row.customer_name, "customer_contact": row.customer_contact,
+                         "starts_at": stamp.astimezone(timezone.utc).isoformat()})
         if row.professional_id is not None:
             bookings[-1].update(professional_id=row.professional_id, service_id=row.service_id, ends_at=utc(row.ends_at).isoformat())
     hours = session.scalars(select(BusinessHours).where(BusinessHours.business_id == business_id)).all()

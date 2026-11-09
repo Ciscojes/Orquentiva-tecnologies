@@ -2,8 +2,9 @@
 from datetime import date, datetime, time, timedelta, timezone
 from uuid import UUID
 from fastapi import APIRouter, HTTPException
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import select
+from app.contact import normalize_contact
 from app.models import Appointment, BusinessHours, Professional, Service
 from app.routes.client import Database, Tenant, WeekIn, to_minutes
 from app.scheduling import LOCAL, require_agenda, utc
@@ -96,6 +97,12 @@ class Confirmation(BaseModel):
     professional_id: int | None = None
     starts_at: AwareDatetime
     request_key: UUID
+    customer_contact: str | None = Field(default=None, max_length=254)
+
+    @field_validator("customer_contact")
+    @classmethod
+    def valid_contact(cls, value):
+        return None if value is None or not value.strip() else normalize_contact(value)
 
 
 @router.post("/bookings", status_code=201)
@@ -110,7 +117,8 @@ def confirm_booking(payload, business_id, session, commit=True):
     stamp = utc(payload.starts_at)
     if existing:
         if (existing.customer_name != payload.customer_name or existing.service_id != payload.service_id
-                or utc(existing.starts_at) != stamp or payload.professional_id not in (None, existing.professional_id)):
+                or utc(existing.starts_at) != stamp or payload.professional_id not in (None, existing.professional_id)
+                or payload.customer_contact != existing.customer_contact):
             raise HTTPException(409, "Confirmación distinta")
         return {"id": existing.id, "professional_id": existing.professional_id}
     choices = available(session, business_id, stamp.astimezone(LOCAL).date(), payload.service_id, payload.professional_id)
@@ -119,7 +127,8 @@ def confirm_booking(payload, business_id, session, commit=True):
     member_id = choices[stamp][0]
     service = session.get(Service, payload.service_id)
     booking = Appointment(business_id=business_id, starts_at=stamp, ends_at=stamp+timedelta(minutes=service.duration_minutes),
-                          customer_name=payload.customer_name, professional_id=member_id, service_id=service.id, request_key=key)
+                          customer_name=payload.customer_name, professional_id=member_id, service_id=service.id, request_key=key,
+                          customer_contact=payload.customer_contact)
     session.add(booking)
     session.flush()
     if commit:

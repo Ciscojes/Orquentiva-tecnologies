@@ -12,7 +12,7 @@ Los pequeños negocios necesitan atender consultas y coordinar citas sin mezclar
 - Inicio y cierre de sesión, roles super_admin y business_admin, sesiones revocables y contraseñas con Argon2.
 - Administrador: crear y activar negocios, habilitar agenda y crear cuentas de negocio.
 - Cliente: gestionar servicios, duración, horarios, profesionales y documentos. Consultar sus reservas.
-- Enlace público por negocio con disponibilidad y confirmación de citas.
+- Enlace público por negocio con disponibilidad y confirmación de citas. El cliente deja un teléfono o correo de contacto, que el negocio ve en su agenda; por WhatsApp se guarda su número automáticamente.
 - Chat con LangGraph: solicita datos, consulta disponibilidad y prepara una propuesta. La interfaz solicita confirmación y llama al backend para guardar la reserva.
 - Interpretación opcional con LLM (API compatible con OpenAI): entiende frases como «la semana que viene a media mañana con la chica de siempre». El modelo solo propone campos; el servidor los valida contra el catálogo y nunca reserva sin confirmación.
 - Consultas de políticas con RAG: recupera los párrafos publicados del negocio y, con el LLM activo, redacta la respuesta citando título y número de párrafo. Sin LLM devuelve el párrafo literal. Ante evidencia insuficiente, pide consultar al negocio.
@@ -130,7 +130,7 @@ npm run lint
 
 Las pruebas pytest utilizan SQLite temporal. verify_postgres inicia un PostgreSQL temporal limitado a este equipo, valida migraciones y flujos, y lo detiene. No utiliza .env ni la base habitual.
 
-Resultado registrado: 164 pruebas aprobadas, incluidas 30 de aceptación y 17 del LLM y del RAG con el modelo simulado. También se comprobó PostgreSQL temporal y la compilación y lint del frontend. Consulte la [Evaluación inicial](docs/evaluation-012/informe-evaluacion.md) para alcance, fechas y límites.
+Resultado registrado: 175 pruebas aprobadas, incluidas 30 de aceptación y 17 del LLM y del RAG con el modelo simulado. También se comprobó PostgreSQL temporal y la compilación y lint del frontend. Consulte la [Evaluación inicial](docs/evaluation-012/informe-evaluacion.md) para alcance, fechas y límites.
 
 ## Arquitectura, seguridad y límites
 

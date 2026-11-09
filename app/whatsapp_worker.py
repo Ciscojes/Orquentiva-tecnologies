@@ -62,7 +62,10 @@ def advance(session, message):
             return "El resumen todavía está pendiente de envío. Espera a recibirlo y después responde CONFIRMO."
         try:
             with session.begin_nested():
-                booking = confirm_booking(Confirmation(**state["proposal"], request_key=state["request_key"]),
+                # El número del remitente lo da Meta: se guarda tal cual, sin pedirlo al cliente.
+                confirmation = Confirmation(**state["proposal"], request_key=state["request_key"])
+                confirmation = confirmation.model_copy(update={"customer_contact": "+" + message.sender})
+                booking = confirm_booking(confirmation,
                                           message.business_id, session, commit=False)
         except HTTPException as exc:
             if exc.status_code != 409:
@@ -73,7 +76,8 @@ def advance(session, message):
         return f"Tu reserva quedó registrada. Referencia: {booking['id']}. Para otra cita escribe el servicio."
     if value in {"confirmo", "confirmar", "si"}:
         return "No hay una propuesta pendiente. Escribe el servicio para preparar tu reserva."
-    result = run_chat(message.business_id, Turn(message=raw, draft=draft), session, llm.enabled())
+    # En WhatsApp el contacto es el número del remitente: no se pregunta.
+    result = run_chat(message.business_id, Turn(message=raw, draft=draft), session, llm.enabled(), ask_contact=False)
     reply = result["reply"]
     if result.get("kind") == "knowledge":
         for source in result["sources"]:

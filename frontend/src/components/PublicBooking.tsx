@@ -12,6 +12,8 @@ const copy = {
     "day": "Fecha",
     "time": "Horario (Costa Rica)",
     "customer": "Tu nombre",
+    "contact": "Teléfono o correo",
+    "contactHelp": "Solo para avisarte si hay cambios en tu cita.",
     "confirm": "Confirmar reserva",
     "choose": "Elige un turno",
     "empty": "No hay turnos disponibles.",
@@ -20,6 +22,7 @@ const copy = {
     "unavailable": "La agenda no está disponible.",
     "conflict": "El turno ya no está disponible. Elige otro.",
     "failure": "No se pudo confirmar. Reintenta con los mismos datos.",
+    "invalidContact": "Revisa el teléfono o el correo: escribe por ejemplo 8888 1234 o nombre@correo.com.",
     "loading": "Cargando…",
     "noServices": "Este negocio todavía no ofrece servicios para reservar."
 },
@@ -31,6 +34,8 @@ const copy = {
     "day": "Date",
     "time": "Time (Costa Rica)",
     "customer": "Your name",
+    "contact": "Phone or email",
+    "contactHelp": "Only used to let you know about changes to your appointment.",
     "confirm": "Confirm booking",
     "choose": "Choose a time",
     "empty": "No available times.",
@@ -39,6 +44,7 @@ const copy = {
     "unavailable": "Scheduling is unavailable.",
     "conflict": "That time is no longer available. Choose another.",
     "failure": "Confirmation failed. Retry with the same details.",
+    "invalidContact": "Check the phone or email, for example 8888 1234 or name@email.com.",
     "loading": "Loading…",
     "noServices": "This business has no services available to book yet."
 }
@@ -59,6 +65,7 @@ export default function PublicBooking({business,language}:{business:string;langu
   const [catalogRetry,setCatalogRetry]=useState(0);
   const [key,setKey]=useState(()=>crypto.randomUUID());
   const [assigned,setAssigned]=useState<number|null>(null);
+  const [contact,setContact]=useState("");
   const path="/book/"+encodeURIComponent(business);
   useEffect(()=>{
     const controller=new AbortController();
@@ -82,7 +89,8 @@ export default function PublicBooking({business,language}:{business:string;langu
     setBusy(true);setMessage(null);
     try{
       const r=await fetch(path,{method:"POST",headers:{"Content-Type":"application/json"},signal:AbortSignal.timeout(15000),
-        body:JSON.stringify({service_id:Number(service),professional_id:person?Number(person):null,starts_at:stamp,customer_name:name,request_key:key})});
+        body:JSON.stringify({service_id:Number(service),professional_id:person?Number(person):null,starts_at:stamp,customer_name:name,customer_contact:contact,request_key:key})});
+      if(r.status===422){setMessage("invalidContact");return;}
       if(r.status===409){reset();setMessage("conflict");setRetry(n=>n+1);return;}
       if(!r.ok)throw Error();
       const result=await r.json();setAssigned(result.professional_id);setMessage("success");
@@ -101,6 +109,8 @@ export default function PublicBooking({business,language}:{business:string;langu
       <label>{t.day}<input type="date" required value={day} onChange={e=>{reset();setDay(e.target.value);}}/></label>
       {day&&<label>{t.time}<select required disabled={loading} value={stamp} onChange={e=>{setStamp(e.target.value);setKey(crypto.randomUUID());}}><option value="">{loading?t.loading:slots.length?t.choose:t.empty}</option>{slots.map(s=><option key={s} value={s}>{time(s)}</option>)}</select></label>}
       <label>{t.customer}<input required maxLength={100} value={name} onChange={e=>{setName(e.target.value);setKey(crypto.randomUUID());}}/></label>
-      <button className="btn btn-primary" disabled={!stamp||!name.trim()||loading}>{t.confirm}</button>
+      <label>{t.contact}<input required maxLength={254} autoComplete="on" value={contact} aria-describedby="contact-help" onChange={e=>{setContact(e.target.value);setKey(crypto.randomUUID());}}/></label>
+      <small id="contact-help">{t.contactHelp}</small>
+      <button className="btn btn-primary" disabled={!stamp||!name.trim()||!contact.trim()||loading}>{t.confirm}</button>
     </fieldset></form>}</section>;
 }

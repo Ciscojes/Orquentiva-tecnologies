@@ -57,7 +57,7 @@ def scenario(client):
     document = {'title':'Condiciones', 'body':'Aceptamos efectivo.\n\nPara cancelar, avisa con 24 horas de anticipación.', 'published':True}
     doc = post('/client/documents', document)
     day = (datetime.now(LOCAL)+timedelta(days=7)).date().isoformat()
-    draft = {'service_id':service['id'],'professional_id':member['id'],'day':day,'clock':'10:00','name':'Pedro','step':'review'}
+    draft = {'service_id':service['id'],'professional_id':member['id'],'day':day,'clock':'10:00','name':'Pedro','contact':'+50688881234','step':'review'}
     return document, doc, draft
 
 @pytest.mark.parametrize('case', CASES, ids=lambda key: key)

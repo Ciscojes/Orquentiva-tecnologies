@@ -5,7 +5,7 @@ import type { Language } from "../services";
 type Service = {id:number; name:string; price_crc:number; duration_minutes:number|null; is_active:boolean};
 type Day = {weekday:number; is_closed:boolean; opens_at:string|null; closes_at:string|null};
 type Hours = {configured:boolean; days:Day[]};
-type Booking = {id:number; customer_name:string; starts_at:string; professional_id?:number; service_id?:number};
+type Booking = {id:number; customer_name:string; customer_contact?:string|null; starts_at:string; professional_id?:number; service_id?:number};
 type Dashboard = {team:Member[]; booking_enabled:boolean; business:{id:string; name:string; time_zone:string}; services:Service[]; hours:Hours; appointments:Booking[]};
 type Props = {language:Language; onSessionEnded:()=>void};
 const copy = {
@@ -214,6 +214,6 @@ function Agenda({data,language}:{data:Dashboard;language:Language}){
   return <div className="client-table-wrapper" tabIndex={0}><table className="client-bookings-table team-agenda"><thead><tr><th>{copy[language].date}</th>{columns.map(p=><th key={p.id??0}>{p.name}</th>)}</tr></thead><tbody>
     {[...groups].map(([stamp,rows])=><tr key={stamp}><th scope="row">{date.format(new Date(stamp))}</th>{columns.map(p=>{
       const b=rows.find(b=>(b.professional_id??null)===p.id);
-      return <td key={p.id??0} className={b?"booked":"empty"}>{b?<><b className="mobile-person">{p.name} · </b>{b.customer_name} · {data.services.find(s=>s.id===b.service_id)?.name}</>:"—"}</td>;
+      return <td key={p.id??0} className={b?"booked":"empty"}>{b?<><b className="mobile-person">{p.name} · </b>{b.customer_name} · {data.services.find(s=>s.id===b.service_id)?.name}{b.customer_contact&&<small className="booking-contact">{b.customer_contact}</small>}</>:"—"}</td>;
     })}</tr>)}</tbody></table></div>;
 }

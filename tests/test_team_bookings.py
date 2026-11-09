@@ -27,7 +27,8 @@ def test_concurrent_customer_bookings_and_module_access(client):
     stamp=slots[12]
     assert "T16:00:00" in stamp
     def reserve(name):
-        payload={"customer_name":name,"service_id":service,"starts_at":stamp,"request_key":str(uuid4())}
+        payload={"customer_name":name,"service_id":service,"starts_at":stamp,"request_key":str(uuid4()),
+                 "customer_contact":"8888-1234"}
         return payload,client.post(path,json=payload)
     with ThreadPoolExecutor(3) as pool:
         results=list(pool.map(reserve,["Pedro","María","Juan"]))

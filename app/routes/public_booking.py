@@ -39,5 +39,7 @@ def slots(business_id: str, session: Database, day: date, service_id: int, profe
 @router.post("", status_code=201)
 def reserve(business_id: str, payload: Confirmation, request: Request, session: Database):
     limiter.check(request)
+    if not payload.customer_contact:
+        raise HTTPException(422, "Indica un teléfono o correo de contacto")
     public_business(session, business_id, lock=True)
     return confirm(payload, business_id, session)

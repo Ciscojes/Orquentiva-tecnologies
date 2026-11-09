@@ -2,7 +2,7 @@ import { useRef, useState, type FormEvent } from "react";
 import type { Language } from "../services";
 
 type Draft = {step:string;clock?:string|null};
-type Proposal = {service_id:number;professional_id:number;customer_name:string;starts_at:string};
+type Proposal = {service_id:number;professional_id:number;customer_name:string;starts_at:string;customer_contact?:string};
 type Reply = {draft:Draft;reply:string;options:string[];proposal:Proposal|null};
 type Source = {title:string;paragraph:number;quote:string};
 type Knowledge = {kind:'knowledge';reply:string;sources:Source[];generated?:boolean};

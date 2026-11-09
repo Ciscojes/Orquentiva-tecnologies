@@ -19,8 +19,12 @@ def test_chat_review_conflict_and_replay(client):
     day=(datetime.now(LOCAL)+timedelta(days=7)).date().isoformat()
     first=turn(f"Quiero un corte con Ana el {day} a las 10")
     assert first["draft"]["step"]=="name"
-    review=turn("Soy Pedro",first["draft"])
-    assert all(v in review["reply"] for v in ("Pedro","Ana","Corte recto",day,"10:00"))
+    contact=turn("Soy Pedro",first["draft"])
+    assert contact["draft"]["step"]=="contact" and contact["proposal"] is None
+    assert turn("no tengo",contact["draft"])["draft"]["step"]=="contact"
+    review=turn("8888-1234",contact["draft"])
+    assert all(v in review["reply"] for v in ("Pedro","Ana","Corte recto",day,"10:00","88881234"))
+    assert review["proposal"]["customer_contact"]=="88881234"
     assert not client.get("/client/dashboard",headers=OWNER).json()["appointments"]
     proposal=review["proposal"]
     assert proposal["professional_id"]==ana["id"]

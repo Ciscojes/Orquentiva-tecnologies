@@ -76,7 +76,9 @@ def test_booking_persists_and_duplicate_confirmations_do_not_duplicate(client, w
     assert "No hay" in turn(client, session_factory, "four", "confirmo")
     with session_factory() as session:
         assert session.scalar(select(func.count()).select_from(Appointment)) == 1
-    assert len(client.get("/client/dashboard", headers=OWNER).json()["appointments"]) == 1
+    # WhatsApp no pregunta el contacto: guarda el número del remitente.
+    [booking] = client.get("/client/dashboard", headers=OWNER).json()["appointments"]
+    assert booking["customer_contact"] == "+50600000000"
 
 
 def test_knowledge_preserves_draft_and_isolates_business(client, wa, session_factory):
