@@ -636,6 +636,11 @@ html { scroll-padding-top: calc(var(--header-height, 140px) + 12px); }
 .booking-chat { margin: 1rem 0 2rem; border: 1px solid #879dab; border-radius: .6rem; padding: .8rem 1rem; overflow-wrap: anywhere; }
 .booking-chat summary { cursor: pointer; color: #10253d; font-weight: 700; min-height: 44px; align-content: center; }
 .booking-chat [role=log] p { padding: .4rem 0; }
+/* Cita de la política: anula el estilo global del pie de página del sitio. */
+.booking-chat blockquote { margin: .3rem 0 .8rem; padding: .6rem .9rem; border-left: 3px solid #087c78; background: #eef6f6; border-radius: .3rem; }
+.booking-chat blockquote footer { display: block; padding: .35rem 0 0; background: none; color: #46606f; font-size: 13px; }
+.business-manager > .client-checkbox { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+.business-manager > .client-checkbox input { width: 20px; height: 20px; accent-color: #087c78; }
 .booking-public label, .booking-public select { display: block; width: 100%; }
 .booking-public select { min-height: 44px; }
 .team-agenda .mobile-person { display: none; }

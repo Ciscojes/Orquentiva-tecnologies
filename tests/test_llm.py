@@ -88,3 +88,30 @@ def test_llm_rate_limit_keeps_chat_working(client, llm_on, monkeypatch):
     for _ in range(25):
         assert client.post("/book/alfa/chat", json={"message": "hola"}).status_code == 200
     assert len(calls) == 20
+
+
+def test_provider_error_is_logged_without_key(llm_on, monkeypatch, caplog):
+    request = httpx.Request("POST", "https://example.test/chat/completions")
+    response = httpx.Response(401, request=request, text='{"error":"Invalid API Key"}')
+    def rejected(payload):
+        raise httpx.HTTPStatusError("401", request=request, response=response)
+    monkeypatch.setattr(llm, "call_model", rejected)
+    with caplog.at_level("WARNING", logger="uvicorn.error.llm"):
+        assert llm.extract("Quiero un corte", MENU, datetime.now(LOCAL).date(), "es") == {}
+    assert "401" in caplog.text and "Invalid API Key" in caplog.text and "test-only" not in caplog.text
+
+
+def test_prompt_includes_weekday_for_relative_dates(llm_on, monkeypatch):
+    seen = {}
+    monkeypatch.setattr(llm, "call_model", lambda payload: seen.setdefault("p", payload) and "{}")
+    llm.extract("pasado mañana", MENU, datetime.now(LOCAL).date(), "es")
+    context = json.loads(seen["p"]["messages"][1]["content"])
+    assert context["today_weekday"] in llm.WEEKDAYS
+
+
+def test_rules_understand_day_after_tomorrow(client, monkeypatch):
+    monkeypatch.delenv("LLM_API_KEY", raising=False)
+    setup_agenda(client)
+    reply = client.post("/book/alfa/chat", json={"message": "Quiero un corte con Ana pasado mañana"}).json()
+    expected = (datetime.now(LOCAL) + timedelta(days=2)).date().isoformat()
+    assert reply["draft"]["day"] == expected

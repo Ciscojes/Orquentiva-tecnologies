@@ -214,6 +214,6 @@ function Agenda({data,language}:{data:Dashboard;language:Language}){
   return <div className="client-table-wrapper" tabIndex={0}><table className="client-bookings-table team-agenda"><thead><tr><th>{copy[language].date}</th>{columns.map(p=><th key={p.id??0}>{p.name}</th>)}</tr></thead><tbody>
     {[...groups].map(([stamp,rows])=><tr key={stamp}><th scope="row">{date.format(new Date(stamp))}</th>{columns.map(p=>{
       const b=rows.find(b=>(b.professional_id??null)===p.id);
-      return <td key={p.id??0} className={b?"booked":"empty"}>{b?<><b className="mobile-person">{p.name} · </b>{b.customer_name} {data.services.find(s=>s.id===b.service_id)?.name}</>:"—"}</td>;
+      return <td key={p.id??0} className={b?"booked":"empty"}>{b?<><b className="mobile-person">{p.name} · </b>{b.customer_name} · {data.services.find(s=>s.id===b.service_id)?.name}</>:"—"}</td>;
     })}</tr>)}</tbody></table></div>;
 }

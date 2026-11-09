@@ -122,9 +122,9 @@ export default function AdminDashboard({ language, onSessionEnded }: Props) {
         <section className="dashboard-card" aria-labelledby="business-create-title"><h4 id="business-create-title">{t.create}</h4>
           <form onSubmit={createBusiness} aria-busy={saving}><fieldset disabled={saving} className="dashboard-fields">
             <label htmlFor="business-id">{t.id}</label><input id="business-id" value={id} onChange={e=>setId(e.target.value)} required maxLength={50} pattern="[a-z0-9][a-z0-9\-]*" aria-describedby="business-id-help" autoCapitalize="none" autoComplete="off" />
-            <label><input type="checkbox" checked={agenda} onChange={e=>setAgenda(e.target.checked)}/> {language==="es"?"Incluir agenda de citas":"Include appointment scheduling"}</label>
             <small id="business-id-help">{t.idHelp}</small>
             <label htmlFor="business-name">{t.name}</label><input id="business-name" value={name} onChange={e=>setName(e.target.value)} required maxLength={150} autoComplete="organization" />
+            <label className="client-checkbox"><input type="checkbox" checked={agenda} onChange={e=>setAgenda(e.target.checked)}/> {language==="es"?"Incluir agenda de citas":"Include appointment scheduling"}</label>
             <button className="btn btn-primary" type="submit">{saving ? t.saving : t.save}</button>
           </fieldset></form><Feedback message={message} language={language} />
         </section>
@@ -183,7 +183,7 @@ function BusinessManager({ business, language, onChange, onSessionEnded }: Props
   }
   return <section className="dashboard-card business-manager" aria-labelledby="business-manager-title" aria-busy={busy}>
     <h4 id="business-manager-title">{business.name}</h4>
-    <label><input type="checkbox" checked={business.booking_enabled} disabled={busy} onChange={async event=>{
+    <label className="client-checkbox"><input type="checkbox" checked={business.booking_enabled} disabled={busy} onChange={async event=>{
       const enabled=event.target.checked;
       setBusy(true); setMessage(null);
       try {onChange(await adminRequest(endpoint+"/agenda",{method:"PUT",body:JSON.stringify({booking_enabled:enabled})}));}

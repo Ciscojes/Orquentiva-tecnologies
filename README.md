@@ -26,9 +26,11 @@ El grafo de LangGraph tiene tres nodos: `understand` (LLM opcional), `interpret`
 Para activarlo, definir antes de arrancar la API:
 
 ```powershell
+# Ejemplo con Groq (plan gratuito, probado con openai/gpt-oss-20b)
 $env:LLM_API_KEY = "tu-clave"
-$env:LLM_MODEL = "gpt-4o-mini"
-# Opcional, otro proveedor compatible: $env:LLM_BASE_URL = "https://api.groq.com/openai/v1"
+$env:LLM_MODEL = "openai/gpt-oss-20b"
+$env:LLM_BASE_URL = "https://api.groq.com/openai/v1"
+python scripts/check_llm.py   # comprueba la clave y lista los modelos si falla
 ```
 
 Sin estas variables el comportamiento es determinista. La consulta de políticas es extractiva: devuelve párrafos literales, sin embeddings ni texto generado. El proyecto se desarrolló con especificaciones por incremento (`specs/`) y asistentes de IA como apoyo de ingeniería.

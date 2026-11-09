@@ -111,6 +111,8 @@ def interpret(state: State):
             d.day = date.fromisoformat(iso[0])
         except ValueError:
             return respond(d,"day","Escribe una fecha válida (AAAA-MM-DD)." if es else "Enter a valid date (YYYY-MM-DD).")
+    elif has(text,"pasado mañana") or has(text,"day after tomorrow"):
+        d.day = today + timedelta(days=2)
     elif has(text,"mañana") or has(text,"tomorrow"):
         d.day = today + timedelta(days=1)
     elif has(text,"hoy") or has(text,"today"):

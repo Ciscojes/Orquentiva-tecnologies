@@ -1,5 +1,5 @@
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy.orm import (
     DeclarativeBase,
@@ -188,6 +188,8 @@ class Lead(Base):
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
+        # La aplicación fija la fecha: la base de demo SQLite creada por migraciones no tiene now().
+        default=lambda: datetime.now(timezone.utc),
         server_default=func.now(),
         nullable=False,
     )
