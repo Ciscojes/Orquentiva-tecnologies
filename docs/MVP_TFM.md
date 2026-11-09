@@ -17,6 +17,7 @@ Se conserva la estructura del repositorio y la web corporativa; no se crea otro 
 | 010b | LangGraph: chat web de reservas con confirmación explícita | Implementado en desarrollo local (SPEC 010b) |
 | 011 | Consulta extractiva de documentos publicados por empresa con referencias | Implementado y probado localmente |
 | 012 | Evaluación, documentación, slides y guion del vídeo | Material preparado; publicación, grabación y envío pendientes. Ver tfm/ENTREGA.md |
+| 013 (ampliación posterior al TFM) | Reservas y consultas por WhatsApp | Piloto implementado y probado localmente; cuenta Meta y prueba real pendientes. Ver specs/013-whatsapp-booking/spec.md |
 
 La numeración propuesta en el chat se desplaza porque SPEC-006 ya existía.
 No se anuncian login, paneles o IA como desplegados por haberlos especificado.

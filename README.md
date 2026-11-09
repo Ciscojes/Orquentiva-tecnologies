@@ -1,6 +1,6 @@
-# ORQENTIVA AI
+# ORQENTIVA Technologies
 
-MVP académico de una aplicación web para gestionar servicios, profesionales y reservas de varios negocios. Incluye un asistente conversacional guiado y consultas de políticas con referencias a documentos publicados.
+MVP académico de una aplicación web para gestionar servicios, profesionales y reservas de varios negocios. Incluye un asistente conversacional con LangGraph que puede apoyarse en un LLM para entender lenguaje libre, y consultas de políticas con referencias a documentos publicados.
 
 ## Problema y objetivo
 
@@ -13,11 +13,25 @@ Los pequeños negocios necesitan atender consultas y coordinar citas sin mezclar
 - Administrador: crear y activar negocios, habilitar agenda y crear cuentas de negocio.
 - Cliente: gestionar servicios, duración, horarios, profesionales y documentos. Consultar sus reservas.
 - Enlace público por negocio con disponibilidad y confirmación de citas.
-- Chat guiado con LangGraph: solicita datos, consulta disponibilidad y prepara una propuesta. La interfaz solicita confirmación y llama al backend para guardar la reserva.
+- Chat con LangGraph: solicita datos, consulta disponibilidad y prepara una propuesta. La interfaz solicita confirmación y llama al backend para guardar la reserva.
+- Interpretación opcional con LLM (API compatible con OpenAI): entiende frases como «la semana que viene a media mañana con la chica de siempre». El modelo solo propone campos; el servidor los valida contra el catálogo y nunca reserva sin confirmación.
 - Recuperación léxica de párrafos publicados por negocio, con título y número de párrafo. Ante evidencia insuficiente, pide consultar al negocio.
 - Reintentos idempotentes, control de solapamientos y separación de datos por negocio.
+- Piloto de WhatsApp (webhook de Meta con firma verificada y worker de procesamiento) preparado para un número de prueba. La conexión con Meta está pendiente y no está publicada. Ver [configuración del piloto](docs/WHATSAPP_PILOT.md) y [SPEC-013](specs/013-whatsapp-booking/spec.md).
 
-El chat actual no invoca un LLM, no usa embeddings ni genera una respuesta libre a partir de documentos. LangGraph organiza un flujo con reglas. La consulta documental es extractiva. Los nombres históricos «IA» o «RAG» en algunas especificaciones no implican integración de un modelo generativo.
+### Cómo usa la IA el chat
+
+El grafo de LangGraph tiene tres nodos: `understand` (LLM opcional), `interpret` (reglas) y `availability` (agenda). Las reglas tienen prioridad y el LLM completa lo que no reconocen. Cada campo propuesto por el modelo se valida contra el catálogo del negocio; si el LLM falla, tarda más de 8 s o se supera el límite de 20 llamadas por IP y minuto, el chat sigue solo con reglas. Detalle en [SPEC-014](specs/014-llm-interpretation/spec.md).
+
+Para activarlo, definir antes de arrancar la API:
+
+```powershell
+$env:LLM_API_KEY = "tu-clave"
+$env:LLM_MODEL = "gpt-4o-mini"
+# Opcional, otro proveedor compatible: $env:LLM_BASE_URL = "https://api.groq.com/openai/v1"
+```
+
+Sin estas variables el comportamiento es determinista. La consulta de políticas es extractiva: devuelve párrafos literales, sin embeddings ni texto generado. El proyecto se desarrolló con especificaciones por incremento (`specs/`) y asistentes de IA como apoyo de ingeniería.
 
 ## Tecnologías
 
@@ -26,11 +40,12 @@ El chat actual no invoca un LLM, no usa embeddings ni genera una respuesta libre
 | Interfaz | React, TypeScript y Vite para página, paneles y chat |
 | API | Python y FastAPI, validación con Pydantic |
 | Datos | SQLAlchemy, PostgreSQL y migraciones Alembic |
-| Conversación | LangGraph y reglas de interpretación |
+| Conversación | LangGraph, reglas de interpretación y LLM opcional vía API compatible con OpenAI (httpx) |
 | Autenticación | pwdlib/Argon2, sesiones opacas en cookie HttpOnly |
-| Verificación | pytest, TestClient, PostgreSQL temporal, TypeScript y oxlint |
+| Verificación | pytest, TestClient, PostgreSQL temporal, TypeScript, oxlint y GitHub Actions |
+| Despliegue | Docker: una imagen con API y frontend en el mismo origen |
 
-Las versiones de frontend se resuelven con frontend/package-lock.json. requirements.txt acota las dependencias Python y fija LangGraph. La evaluación se ejecutó con Python 3.13.5. La demostración local opcional usa SQLite para facilitar la revisión, mientras que el desarrollo habitual usa PostgreSQL.
+Las versiones de frontend se resuelven con frontend/package-lock.json. requirements.txt acota las dependencias Python y fija LangGraph. Python 3.13 en local y en GitHub Actions. La demostración local opcional usa SQLite para facilitar la revisión, mientras que el desarrollo habitual usa PostgreSQL.
 
 ## Instalación y ejecución
 
@@ -60,7 +75,7 @@ En otra terminal, desde la raíz:
 
 Abrir http://127.0.0.1:5179/#access. El backend usa el puerto 8002. El preparador crea tfm-demo.sqlite3 con migraciones, dos negocios, usuarios ficticios, profesionales, horarios y políticas. Si la base ya existe, se detiene sin sobrescribirla. No lee .env ni modifica la base habitual.
 
-Accesos y recorrido: [Guía de demostración](tfm/ACCESO_DEMO.md).
+Los usuarios de prueba están en la sección [Usuarios de prueba](#usuarios-de-prueba).
 
 ### Desarrollo con PostgreSQL
 
@@ -88,9 +103,10 @@ scripts/                Preparación, arranque y validación
 tests/                  Pruebas aisladas y 30 escenarios de aceptación
 specs/                  Especificaciones y decisiones por incremento
 docs/                   Arquitectura, operación y resultados
-tfm/                    Presentación, guion y lista de entrega
+tfm/                    Presentación, capturas y plan de publicación
 seed.py                 Dos negocios y catálogo ficticio inicial
 requirements.txt        Dependencias Python
+Dockerfile              Imagen de despliegue (API + frontend)
 ```
 
 ## Pruebas y evidencia
@@ -105,20 +121,29 @@ npm run lint
 
 Las pruebas pytest utilizan SQLite temporal. verify_postgres inicia un PostgreSQL temporal limitado a este equipo, valida migraciones y flujos, y lo detiene. No utiliza .env ni la base habitual.
 
-Resultado registrado: 137 pruebas aprobadas, incluidas 30 de aceptación. También se comprobó PostgreSQL temporal y la compilación y lint del frontend. Consulte [Verificación de entrega](tfm/VERIFICACION.md) y [Evaluación inicial](docs/evaluation-012/informe-evaluacion.md) para alcance, fechas y límites.
+Resultado registrado: 153 pruebas aprobadas, incluidas 30 de aceptación y 6 del LLM con el modelo simulado. También se comprobó PostgreSQL temporal y la compilación y lint del frontend. Consulte la [Evaluación inicial](docs/evaluation-012/informe-evaluacion.md) para alcance, fechas y límites.
 
 ## Arquitectura, seguridad y límites
 
-Consulte [Arquitectura](docs/ARQUITECTURA_TFM.md). Las autorizaciones se comprueban en la API. Las fechas se guardan en UTC y la agenda se presenta en horario de Costa Rica. No hay registro público, recuperación de contraseña ni MFA. Los límites de uso se mantienen en memoria por proceso. La publicación exige HTTPS y configuración de origen/proxy. La demo con contraseña conocida es exclusivamente local y contiene datos ficticios.
+Consulte [Arquitectura](docs/ARQUITECTURA_TFM.md). Las autorizaciones se comprueban en la API. Las fechas se guardan en UTC y la agenda se presenta en horario de Costa Rica. No hay registro público, recuperación de contraseña ni MFA. Los límites de uso se mantienen en memoria por proceso. La publicación exige HTTPS y configuración de origen; ver [plan de publicación](tfm/DESPLIEGUE.md) con Docker. La demo con contraseña conocida es exclusivamente local y contiene datos ficticios.
 
-No se incluyen WhatsApp, voz, pagos, suscripciones, n8n ni un modelo generativo. La evaluación es de un MVP y no acredita disponibilidad o seguridad de producción.
+WhatsApp queda como piloto sin conectar. No se incluyen voz, pagos, suscripciones ni n8n. El LLM solo interpreta mensajes; no genera respuestas. La evaluación es de un MVP y no acredita disponibilidad o seguridad de producción.
 
-## Material de entrega
+## Usuarios de prueba
 
-- [Presentación PowerPoint](tfm/ORQENTIVA-TFM.pptx).
-- [Guion y recorrido de grabación](tfm/GUION_VIDEO.md).
-- [Accesos de prueba](tfm/ACCESO_DEMO.md).
-- [Lista de entrega y enlaces](tfm/ENTREGA.md).
-- [Plan de publicación](tfm/DESPLIEGUE.md).
+Disponibles solo en la demostración local aislada (`tfm-demo.sqlite3`), con datos ficticios.
 
-Repositorio público: pendiente de publicación por el autor. Vídeo: pendiente de grabación y enlace. Despliegue público: no realizado. No se ha enviado el formulario del máster. La presentación adjunta satisface la opción de incluir el archivo en el código; el formulario requiere completar su URL de acceso.
+| Rol | Usuario | Contraseña |
+| --- | --- | --- |
+| Administrador de plataforma | admin@example.com | Orqentiva-Demo-2026! |
+| Barbería Alfa | alfa@example.com | Orqentiva-Demo-2026! |
+| Barbería Beta | beta@example.com | Orqentiva-Demo-2026! |
+
+Reservas públicas: http://127.0.0.1:5179/#reservar/alfa y http://127.0.0.1:5179/#reservar/beta
+
+## Enlaces del proyecto
+
+- Repositorio: https://github.com/Ciscojes/Orquentiva-tecnologies
+- Presentación: [ORQENTIVA-TFM.pptx](tfm/ORQENTIVA-TFM.pptx)
+- Vídeo: _pendiente de añadir_
+- Despliegue: _pendiente de añadir la URL_ (imagen Docker lista, ver [plan de publicación](tfm/DESPLIEGUE.md))

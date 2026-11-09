@@ -1,22 +1,29 @@
-"""Conversación guiada; el grafo consulta la agenda, sin efectuar escrituras."""
+"""Conversación guiada; el grafo consulta la agenda, sin efectuar escrituras.
+
+Flujo: understand (LLM opcional) -> interpret (reglas) -> availability (agenda).
+"""
 import re
 import unicodedata
 from datetime import date, datetime, timedelta
 from typing import Literal, TypedDict
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from langgraph.graph import END, START, StateGraph
 from langgraph.runtime import Runtime
 from langsmith import tracing_context
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
+from app import llm
 from app.routes.client import Database
+from app.routes.leads import LeadLimiter
 from app.routes.public_booking import catalog
 from app.routes.team import available
 from app.routes.knowledge import answer, policy_question
 from app.scheduling import LOCAL
 
 router = APIRouter(prefix="/book/{business_id}", tags=["chat"])
+# Limita las llamadas al LLM por IP; al superarlo el chat sigue solo con reglas.
+llm_limiter = LeadLimiter(per_minute=20)
 
 
 class Draft(BaseModel):
@@ -45,6 +52,8 @@ class State(TypedDict, total=False):
     reply: str
     options: list[str]
     proposal: dict | None
+    use_llm: bool
+    hints: dict
 
 
 def normalized(value):
@@ -60,8 +69,17 @@ def respond(draft, step, reply, options=(), proposal=None):
             "options":list(options), "proposal":proposal}
 
 
+def understand(state: State):
+    """Propuesta opcional del LLM; vacía si no está activo o si falla."""
+    if not state.get("use_llm"):
+        return {"hints": {}}
+    turn = state["turn"]
+    return {"hints": llm.extract(turn.message, state["menu"], datetime.now(LOCAL).date(), turn.language)}
+
+
 def interpret(state: State):
     turn, menu = state["turn"], state["menu"]
+    hints = state.get("hints") or {}
     d = turn.draft.model_copy()
     raw = turn.message.strip()
     text = normalized(raw)
@@ -70,6 +88,8 @@ def interpret(state: State):
         name = re.sub(r"^(?:me llamo|soy|mi nombre es|my name is|i am|i'm)\s+", "", raw, flags=re.I).strip(" .")
         if 1 <= len(name) <= 100 and all(c.isalpha() or c in " -'’" for c in name) and text not in {"si","yes","no"}:
             d.name = name
+        elif hints.get("name"):
+            d.name = hints["name"]
         return {"draft":d}
     services = menu["services"]
     matches = [s for s in services if has(text,s["name"])]
@@ -108,7 +128,12 @@ def interpret(state: State):
             hour = hour % 12 + (12 if clock[3]=="pm" else 0)
         if hour < 24:
             d.clock = f"{hour:02d}:{clock[2] or '00'}"
-    if re.search(r"\b(con|with)\s+\w+",text) and not members and not any(has(text,w) for w in ["cualquiera","anyone"]):
+    # Las reglas tienen prioridad; el LLM solo completa lo que ellas no reconocieron.
+    for field in ("service_id", "professional_id", "day", "clock", "name"):
+        if getattr(d, field) in (None, "") and field in hints:
+            setattr(d, field, hints[field])
+    if (re.search(r"\b(con|with)\s+\w+",text) and not members and "professional_id" not in hints
+            and not any(has(text,w) for w in ["cualquiera","anyone"])):
         d.professional_id = None
         return respond(d,"professional","¿Con qué profesional?" if es else "Which professional?",
                        [p["name"] for p in menu["team"] if d.service_id is None or d.service_id in p["service_ids"]])
@@ -144,19 +169,26 @@ def lookup(state: State, runtime: Runtime[Session]):
 
 
 builder = StateGraph(State, context_schema=Session)
+builder.add_node("understand",understand)
 builder.add_node("interpret",interpret)
 builder.add_node("availability",lookup)
-builder.add_edge(START,"interpret")
+builder.add_edge(START,"understand")
+builder.add_edge("understand","interpret")
 builder.add_conditional_edges("interpret",lambda state: END if state.get("reply") else "availability")
 builder.add_edge("availability",END)
 workflow = builder.compile()
 
 
-@router.post("/chat")
-def chat(business_id: str, turn: Turn, session: Database):
+def run_chat(business_id: str, turn: Turn, session, use_llm: bool = False):
     menu = catalog(business_id, session)
     if turn.mode == 'knowledge' or policy_question(turn.message):
         return answer(session, business_id, turn.message, turn.language, menu['name'])
     with tracing_context(enabled=False):
-        result = workflow.invoke({"business":business_id,"turn":turn,"menu":menu},context=session)
+        result = workflow.invoke({"business":business_id,"turn":turn,"menu":menu,"use_llm":use_llm},context=session)
     return {key:result[key] for key in ("draft","reply","options","proposal")}
+
+
+@router.post("/chat")
+def chat(business_id: str, turn: Turn, session: Database, request: Request):
+    use_llm = llm.enabled() and llm_limiter.allow(request)
+    return run_chat(business_id, turn, session, use_llm)

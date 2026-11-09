@@ -1,4 +1,4 @@
-# Arquitectura de ORQENTIVA
+# Arquitectura de ORQENTIVA Technologies
 
 ## Componentes y responsabilidades
 
@@ -8,7 +8,8 @@ flowchart TD
   R --> F[FastAPI]
   F --> A[Autenticación y autorización]
   F --> B[Servicios, profesionales y agenda]
-  F --> G[LangGraph: interpretación y disponibilidad]
+  F --> G[LangGraph: understand, interpret y availability]
+  G -. opcional .-> L[LLM compatible con OpenAI]
   F --> K[Recuperación de documentos publicados]
   A --> D[(SQLAlchemy y PostgreSQL)]
   B --> D
@@ -25,11 +26,13 @@ super_admin administra negocios y crea usuarios. business_admin opera sobre la e
 ## Reserva conversacional
 
 1. React envía mensaje y borrador a POST /book/{business_id}/chat.
-2. El grafo interpreta servicio, profesional, fecha y hora mediante reglas.
+2. El grafo de LangGraph ejecuta tres nodos. `understand` pide al LLM, si está configurado, una propuesta de servicio, profesional, fecha, hora y nombre en JSON. `interpret` aplica las reglas deterministas y usa la propuesta del LLM solo para los campos que las reglas no reconocieron. Cada campo del LLM se valida contra el catálogo del negocio; los ids inventados, fechas pasadas u horas mal formadas se descartan.
 3. La consulta de disponibilidad comprueba duración, horarios y solapamientos.
 4. El chat devuelve datos faltantes, alternativas o una propuesta. Este recorrido no escribe reservas.
 5. La persona confirma en React. La interfaz envía la propuesta a POST /book/{business_id} con request_key.
 6. El backend revalida y persiste. Solo tras una respuesta correcta aparece «Cita confirmada».
+
+El LLM no escribe en la base de datos ni redacta la respuesta al cliente, y el mensaje se le envía marcado como texto no confiable. Si falla, tarda más de 8 segundos, responde algo que no es JSON o se supera el límite de 20 llamadas por IP y minuto, el chat continúa solo con reglas.
 
 La clave de solicitud evita duplicados por reintento. Una nueva solicitud a un turno ocupado recibe conflicto. En PostgreSQL, el bloqueo de negocio coordina las confirmaciones concurrentes. La validación SQLite no sustituye la de PostgreSQL.
 
@@ -43,6 +46,6 @@ Contraseñas Argon2, tokens aleatorios de sesión cuyo hash se guarda en base de
 
 ## Decisiones y aprendizaje
 
-Separar autorización y presentación evita depender de botones ocultos. Separar propuesta y confirmación evita escrituras por mensajes ambiguos. Usar una referencia literal permite verificar el origen de cada respuesta. El flujo guiado ofrece comportamiento acotado y comprobable con coste de API de modelo inexistente, a cambio de menor flexibilidad lingüística.
+Separar autorización y presentación evita depender de botones ocultos. Separar propuesta y confirmación evita escrituras por mensajes ambiguos. Usar una referencia literal permite verificar el origen de cada respuesta. El LLM aporta flexibilidad lingüística (frases como «la semana que viene a media mañana»), mientras que las reglas, la validación contra el catálogo y la confirmación explícita mantienen el comportamiento comprobable. Sin clave de API el sistema funciona igual que antes, sin coste de modelo.
 
 La hipótesis de mejora de productividad frente a otros asistentes sigue sin evaluarse con usuarios reales. Las pruebas certifican únicamente los escenarios ejecutados.

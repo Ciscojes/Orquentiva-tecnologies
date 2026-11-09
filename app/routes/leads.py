@@ -32,9 +32,17 @@ class LeadLimiter:
     No confiar en X-Forwarded-For enviado directamente por el visitante.
     """
 
-    def __init__(self):
+    def __init__(self, per_minute: int = 5):
+        self.per_minute = per_minute
         self.buckets = OrderedDict()
         self.lock = Lock()
+
+    def allow(self, request: Request) -> bool:
+        try:
+            self.check(request)
+        except HTTPException:
+            return False
+        return True
 
     def check(self, request: Request):
         key = request.client.host if request.client else "unknown"
@@ -46,7 +54,7 @@ class LeadLimiter:
                     break
                 self.buckets.popitem(last=False)
             start, count = self.buckets.get(key, (now, 0))
-            if count >= 5:
+            if count >= self.per_minute:
                 raise HTTPException(429, "Demasiadas solicitudes", headers={"Retry-After": "60"})
             if key not in self.buckets and len(self.buckets) >= 10000:
                 raise HTTPException(429, "Inténtalo más tarde", headers={"Retry-After": "60"})

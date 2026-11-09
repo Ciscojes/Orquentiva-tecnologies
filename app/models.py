@@ -24,6 +24,27 @@ class Base(DeclarativeBase):
     pass
 
 
+class WhatsAppConversation(Base):
+    __tablename__ = "whatsapp_conversations"
+    business_id: Mapped[str] = mapped_column(ForeignKey("businesses.id"), primary_key=True)
+    sender: Mapped[str] = mapped_column(String(128), primary_key=True)
+    state: Mapped[dict] = mapped_column(JSON, default=dict)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class WhatsAppMessage(Base):
+    __tablename__ = "whatsapp_messages"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    message_id: Mapped[str] = mapped_column(String(256), unique=True)
+    business_id: Mapped[str] = mapped_column(ForeignKey("businesses.id"))
+    phone_id: Mapped[str] = mapped_column(String(128))
+    sender: Mapped[str] = mapped_column(String(128))
+    body: Mapped[str] = mapped_column(Text)
+    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    reply: Mapped[str | None] = mapped_column(Text)
+    sent: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
+
+
 class KnowledgeDocument(Base):
     __tablename__ = "knowledge_documents"
     id: Mapped[int] = mapped_column(primary_key=True)

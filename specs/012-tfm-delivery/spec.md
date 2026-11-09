@@ -1,7 +1,7 @@
 # SPEC-012 — Evaluación y entrega académica
 
 ## Alcance
-Preparar evaluación reproducible, documentación completa, presentación, guion y accesos ficticios. Mantener la lógica del MVP y diferenciar lo implementado del roadmap. El vídeo debe contener la explicación personal del alumno y el formulario final lo envía el alumno.
+Preparar evaluación reproducible, documentación completa, presentación, guion y accesos ficticios. Mantener la lógica del MVP y diferenciar lo implementado del roadmap. El vídeo contiene la explicación personal del autor y el formulario final lo envía el autor.
 
 ## Criterios
 - 30 escenarios documentados: 10 informativos, 10 reservas y 10 adversos.
@@ -9,9 +9,9 @@ Preparar evaluación reproducible, documentación completa, presentación, guion
 - Validar compilación y lint, PostgreSQL temporal y recorrido de navegador.
 - README incluye todos los apartados del texto de requisitos.
 - Demo aislada con cuentas ficticias, sin cargar .env ni sobrescribir bases existentes.
-- Presentación editable y guion fieles a la implementación sin LLM.
+- Presentación editable y guion fieles a la implementación (LLM opcional desde SPEC-014).
 - Lista de entrega distingue archivos preparados, publicación pendiente y acciones personales.
 - No crear commits, publicar ni conceder acceso a terceros automáticamente.
 
 ## Estado
-Ver tfm/VERIFICACION.md y tfm/ENTREGA.md. La preparación del material no equivale a envío académico ni despliegue.
+Ver docs/evaluation-012/informe-evaluacion.md. La preparación del material no equivale a envío académico ni despliegue.

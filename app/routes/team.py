@@ -100,6 +100,10 @@ class Confirmation(BaseModel):
 
 @router.post("/bookings", status_code=201)
 def confirm(payload: Confirmation, business_id: Tenant, session: Database):
+    return confirm_booking(payload, business_id, session)
+
+
+def confirm_booking(payload, business_id, session, commit=True):
     require_agenda(session, business_id, lock=True)
     key = str(payload.request_key)
     existing = session.scalar(select(Appointment).where(Appointment.business_id == business_id, Appointment.request_key == key))
@@ -117,5 +121,7 @@ def confirm(payload: Confirmation, business_id: Tenant, session: Database):
     booking = Appointment(business_id=business_id, starts_at=stamp, ends_at=stamp+timedelta(minutes=service.duration_minutes),
                           customer_name=payload.customer_name, professional_id=member_id, service_id=service.id, request_key=key)
     session.add(booking)
-    session.commit()
+    session.flush()
+    if commit:
+        session.commit()
     return {"id": booking.id, "professional_id": member_id}

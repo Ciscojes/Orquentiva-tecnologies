@@ -1,10 +1,12 @@
 """Shared serialization point for schedule changes and confirmations."""
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from fastapi import HTTPException
 from sqlalchemy import select, update
 from app.models import Business
 
-LOCAL = timezone(timedelta(hours=-6))
+# Zona IANA en lugar de un desfase fijo; en Windows la aporta el paquete tzdata.
+LOCAL = ZoneInfo("America/Costa_Rica")
 
 
 def require_agenda(session, business_id, *, lock=False):
