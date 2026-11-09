@@ -38,7 +38,7 @@ def main():
             session.add(KnowledgeDocument(business_id=business,title='Cancelaciones',
                 body=f'Para cancelar, avisa con {hours} horas de anticipación.',published=True))
     engine.dispose()
-    print('Demostración aislada preparada. Consulta tfm/ACCESO_DEMO.md para los accesos.')
+    print('Demostración aislada preparada. Los accesos están en la sección Usuarios de prueba del README.')
 
 if __name__ == '__main__':
     main()

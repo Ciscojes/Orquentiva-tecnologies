@@ -16,7 +16,7 @@ Se conserva la estructura del repositorio y la web corporativa; no se crea otro 
 | 010a | Agenda por profesional y reservas por enlace | Implementado para validación local |
 | 010b | LangGraph: chat web de reservas con confirmación explícita | Implementado en desarrollo local (SPEC 010b) |
 | 011 | Consulta extractiva de documentos publicados por empresa con referencias | Implementado y probado localmente |
-| 012 | Evaluación, documentación, slides y guion del vídeo | Material preparado; publicación, grabación y envío pendientes. Ver tfm/ENTREGA.md |
+| 012 | Evaluación, documentación, slides y guion del vídeo | Documentación, demo aislada y pruebas de aceptación completadas |
 | 013 (ampliación posterior al TFM) | Reservas y consultas por WhatsApp | Piloto implementado y probado localmente; cuenta Meta y prueba real pendientes. Ver specs/013-whatsapp-booking/spec.md |
 
 La numeración propuesta en el chat se desplaza porque SPEC-006 ya existía.
@@ -42,4 +42,4 @@ No se ha enviado la entrega ni compartido acceso con terceros.
 
 ## Consolidación de la entrega
 
-README actualizado, presentación editable, guion, demo aislada y evidencias en tfm/. LangGraph organiza reglas; las consultas documentales son extractivas y no incluyen un LLM. Validación ampliada en tfm/VERIFICACION.md.
+README actualizado, demo aislada y evidencias en docs/evaluation-012. LangGraph combina reglas con un LLM opcional que solo interpreta (SPEC-014); las consultas documentales son extractivas.

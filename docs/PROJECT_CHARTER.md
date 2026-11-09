@@ -32,4 +32,4 @@ Especificación antes de nuevas funcionalidades, pytest en CI, separación de da
 
 ## Estado de consolidación del MVP
 
-El roadmap anterior describe la planificación histórica. El MVP actual incorpora paneles, agenda por profesional, chat con LangGraph y recuperación extractiva por negocio. No hay LLM ni RAG generativo. La hipótesis comparativa y p95 siguen sin evaluarse. Consultar tfm/VERIFICACION.md y tfm/ENTREGA.md para los resultados y entregables actuales.
+El roadmap anterior describe la planificación histórica. El MVP actual incorpora paneles, agenda por profesional, chat con LangGraph y recuperación extractiva por negocio. El LLM es opcional y solo interpreta mensajes (SPEC-014); no hay RAG generativo. La hipótesis comparativa y p95 siguen sin evaluarse. Los resultados están en docs/evaluation-012.

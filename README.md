@@ -103,7 +103,6 @@ scripts/                Preparación, arranque y validación
 tests/                  Pruebas aisladas y 30 escenarios de aceptación
 specs/                  Especificaciones y decisiones por incremento
 docs/                   Arquitectura, operación y resultados
-tfm/                    Presentación, capturas y plan de publicación
 seed.py                 Dos negocios y catálogo ficticio inicial
 requirements.txt        Dependencias Python
 Dockerfile              Imagen de despliegue (API + frontend)
@@ -125,9 +124,28 @@ Resultado registrado: 153 pruebas aprobadas, incluidas 30 de aceptación y 6 del
 
 ## Arquitectura, seguridad y límites
 
-Consulte [Arquitectura](docs/ARQUITECTURA_TFM.md). Las autorizaciones se comprueban en la API. Las fechas se guardan en UTC y la agenda se presenta en horario de Costa Rica. No hay registro público, recuperación de contraseña ni MFA. Los límites de uso se mantienen en memoria por proceso. La publicación exige HTTPS y configuración de origen; ver [plan de publicación](tfm/DESPLIEGUE.md) con Docker. La demo con contraseña conocida es exclusivamente local y contiene datos ficticios.
+Consulte [Arquitectura](docs/ARQUITECTURA_TFM.md). Las autorizaciones se comprueban en la API. Las fechas se guardan en UTC y la agenda se presenta en horario de Costa Rica. No hay registro público, recuperación de contraseña ni MFA. Los límites de uso se mantienen en memoria por proceso. La publicación exige HTTPS y configuración de origen; ver [Despliegue](#despliegue). La demo con contraseña conocida es exclusivamente local y contiene datos ficticios.
 
 WhatsApp queda como piloto sin conectar. No se incluyen voz, pagos, suscripciones ni n8n. El LLM solo interpreta mensajes; no genera respuestas. La evaluación es de un MVP y no acredita disponibilidad o seguridad de producción.
+
+## Despliegue
+
+El `Dockerfile` crea una sola imagen: compila el frontend, lo sirve desde FastAPI en el mismo origen que la API, aplica las migraciones al arrancar y escucha en el puerto `PORT` (8000 por defecto). Sirve para cualquier proveedor de contenedores (Render, Railway, Fly.io).
+
+```powershell
+docker build -t orqentiva .
+docker run --rm -p 8000:8000 -e DATABASE_URL="sqlite:////tmp/orqentiva.sqlite3" `
+  -e AUTH_ALLOWED_ORIGINS="http://localhost:8000" -e AUTH_COOKIE_SECURE=false orqentiva
+```
+
+| Variable | Valor en producción |
+| --- | --- |
+| DATABASE_URL | PostgreSQL dedicada (`postgresql+psycopg://usuario:clave@host:5432/orqentiva_db`) |
+| AUTH_ALLOWED_ORIGINS | Origen HTTPS exacto de la publicación |
+| AUTH_COOKIE_SECURE | `true` |
+| LLM_API_KEY, LLM_MODEL, LLM_BASE_URL | Opcionales: activan la interpretación con LLM |
+
+Los límites de peticiones viven en memoria, así que la publicación usa una sola instancia. Las cuentas publicadas deben ser ficticias y distintas de las de la demo local.
 
 ## Usuarios de prueba
 
@@ -143,7 +161,7 @@ Reservas públicas: http://127.0.0.1:5179/#reservar/alfa y http://127.0.0.1:5179
 
 ## Enlaces del proyecto
 
-- Repositorio: https://github.com/Ciscojes/Orquentiva-tecnologies
-- Presentación: [ORQENTIVA-TFM.pptx](tfm/ORQENTIVA-TFM.pptx)
+- Repositorio: https://github.com/Ciscojes/orqentiva-technologies
+- Presentación: _pendiente de añadir el enlace público_
 - Vídeo: _pendiente de añadir_
-- Despliegue: _pendiente de añadir la URL_ (imagen Docker lista, ver [plan de publicación](tfm/DESPLIEGUE.md))
+- Despliegue: _pendiente de añadir la URL_ (ver [Despliegue](#despliegue))
