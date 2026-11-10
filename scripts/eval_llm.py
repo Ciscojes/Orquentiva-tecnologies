@@ -22,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from app import llm  # noqa: E402
-from app.routes.booking_chat import Turn, interpret  # noqa: E402
+from app.services.chat import Turn, interpret  # noqa: E402
 
 CASES_FILE = ROOT / "evals" / "extraction_cases.json"
 FIELDS = ("service_id", "professional_id", "day", "clock", "name")

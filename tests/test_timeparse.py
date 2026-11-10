@@ -4,7 +4,7 @@ from datetime import date, datetime, timedelta
 import pytest
 
 from app.scheduling import LOCAL
-from app.routes.booking_chat import normalized
+from app.services.chat import normalized
 from app.timeparse import find_clock, find_day
 
 TODAY = date(2026, 11, 10)

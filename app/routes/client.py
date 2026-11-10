@@ -1,22 +1,17 @@
 """Servicios y horario del negocio autenticado; reservas de solo lectura."""
 from datetime import timezone
-from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, model_validator
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, ConfigDict, Field, StrictBool
 from sqlalchemy import select, delete
-from sqlalchemy.orm import Session
 
-from app.auth import current_business
-from app.database import get_db
-from app.models import Appointment, Business, BusinessHours, Service
-
+from app.deps import Database, Tenant
+from app.models import Appointment, Business, BusinessHours, Professional, Service
 from app.scheduling import require_agenda, utc
-from app.models import Professional
+from app.schemas import WeekIn
+from app.services.agenda import to_clock, to_minutes
 
 router = APIRouter(prefix="/client", tags=["client"])
-Tenant = Annotated[str, Depends(current_business)]
-Database = Annotated[Session, Depends(get_db)]
 TIME_ZONE = "America/Costa_Rica"
 
 
@@ -28,45 +23,9 @@ class ServiceIn(BaseModel):
     is_active: StrictBool = True
 
 
-class DayIn(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    weekday: int = Field(ge=0, le=6, strict=True)
-    is_closed: StrictBool
-    opens_at: str | None = Field(default=None, pattern=r"^(?:[01][0-9]|2[0-3]):[0-5][0-9]$")
-    closes_at: str | None = Field(default=None, pattern=r"^(?:[01][0-9]|2[0-3]):[0-5][0-9]$")
-
-    @model_validator(mode="after")
-    def valid_interval(self):
-        if self.is_closed:
-            if self.opens_at is not None or self.closes_at is not None:
-                raise ValueError("Un día cerrado no tiene intervalo")
-        elif self.opens_at is None or self.closes_at is None or self.opens_at >= self.closes_at:
-            raise ValueError("Apertura y cierre deben definir un intervalo del mismo día")
-        return self
-
-
-class WeekIn(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    days: list[DayIn] = Field(min_length=7, max_length=7)
-
-    @model_validator(mode="after")
-    def complete_week(self):
-        if {day.weekday for day in self.days} != set(range(7)):
-            raise ValueError("Cada día debe aparecer una sola vez")
-        return self
-
-
 def service_view(row: Service):
     return {"id": row.id, "name": row.name, "price_crc": row.price_crc,
             "duration_minutes": row.duration_minutes, "is_active": row.is_active}
-
-
-def to_clock(value):
-    return None if value is None else f"{value // 60:02d}:{value % 60:02d}"
-
-
-def to_minutes(value):
-    return None if value is None else int(value[:2]) * 60 + int(value[3:])
 
 
 def hours_view(rows):

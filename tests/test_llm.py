@@ -126,7 +126,7 @@ CATALOG = {"services": [{"id": 1, "name": "Corte"}, {"id": 2, "name": "Corte y b
 def merged(message, hints):
     """Borrador tras aplicar las reglas a un mensaje con una propuesta del LLM ya validada."""
     from datetime import date
-    from app.routes.booking_chat import Turn, interpret
+    from app.services.chat import Turn, interpret
     state = {"turn": Turn(message=message), "menu": CATALOG, "hints": hints, "today": date(2026, 11, 10)}
     return interpret(state)["draft"]
 

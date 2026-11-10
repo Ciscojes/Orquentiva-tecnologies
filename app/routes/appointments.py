@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.models import Appointment, Business, Professional, Service
-from app.routes.client import Database, Tenant
+from app.deps import Database, Tenant
 from app.scheduling import require_agenda
 
 router = APIRouter(tags=["agenda básica"])

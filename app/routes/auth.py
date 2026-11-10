@@ -10,10 +10,10 @@ from app.auth import (COOKIE_NAME, SESSION_SECONDS, current_user, new_session,
                       secure_cookie, token_digest, user_view, verify_origin, verify_password)
 from app.database import get_db
 from app.models import AuthSession, Business, User
-from app.routes.leads import LeadLimiter
+from app.services.rate_limit import RateLimiter
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-login_limiter = LeadLimiter()  # Instancia independiente: 5 intentos/IP/minuto.
+login_limiter = RateLimiter()  # Instancia independiente: 5 intentos/IP/minuto.
 
 
 class LoginIn(BaseModel):
