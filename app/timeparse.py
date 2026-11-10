@@ -96,3 +96,26 @@ def find_clock(text: str) -> ClockMatch:
         return ClockMatch()
     return ClockMatch(f"{hour:02d}:{minutes}", sure)
 
+def choose_day(rule: DayMatch, hint: date | None, today: date) -> date | None:
+    """Día final cuando el mensaje habla de una fecha y el LLM propone otra.
+
+    Las reglas inequívocas mandan. Si solo reconocieron el día de la semana, el LLM puede
+    mover la semana hacia adelante ("viernes 20", "el otro viernes") pero no cambiar de día
+    ni proponer una fecha anterior a la de las reglas. Si solo
+    reconocieron "la semana que viene", el LLM debe proponer un día de esa semana.
+    """
+    if rule.sure or hint is None:
+        return rule.value
+    if rule.weekday is not None:
+        return hint if hint.weekday() == rule.weekday and hint >= rule.value else rule.value
+    if rule.next_week:
+        start = next_week_start(today)
+        return hint if start <= hint <= start + timedelta(days=6) else None
+    return hint
+
+
+def choose_clock(rule: ClockMatch, hint: str | None) -> str | None:
+    """Hora final: el LLM solo decide entre "a las 4" de la madrugada o de la tarde."""
+    if rule.value is None:
+        return hint
+    return hint if hint is not None and hint == rule.alternative else rule.value

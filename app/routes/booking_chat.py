@@ -21,7 +21,7 @@ from app.routes.public_booking import catalog
 from app.routes.team import available
 from app.routes.knowledge import answer, policy_question
 from app.scheduling import LOCAL
-from app.timeparse import find_clock, find_day
+from app.timeparse import choose_clock, choose_day, find_clock, find_day
 
 router = APIRouter(prefix="/book/{business_id}", tags=["chat"])
 # Limita las llamadas al LLM por IP; al superarlo el chat sigue solo con reglas.
@@ -57,6 +57,7 @@ class State(TypedDict, total=False):
     proposal: dict | None
     use_llm: bool
     hints: dict
+    today: date
     ask_contact: bool
 
 
@@ -73,12 +74,17 @@ def respond(draft, step, reply, options=(), proposal=None):
             "options":list(options), "proposal":proposal}
 
 
+def current_day(state: State) -> date:
+    """Hoy en la zona del negocio; el estado puede fijarlo para pruebas y evaluaciones."""
+    return state.get("today") or datetime.now(LOCAL).date()
+
+
 def understand(state: State):
     """Propuesta opcional del LLM; vacía si no está activo o si falla."""
     if not state.get("use_llm"):
         return {"hints": {}}
     turn = state["turn"]
-    return {"hints": llm.extract(turn.message, state["menu"], datetime.now(LOCAL).date(), turn.language)}
+    return {"hints": llm.extract(turn.message, state["menu"], current_day(state), turn.language)}
 
 
 def interpret(state: State):
@@ -102,31 +108,41 @@ def interpret(state: State):
             return respond(d,"contact","Escribe un teléfono (por ejemplo 8888 1234) o un correo válido."
                            if es else "Enter a phone number (for example 8888 1234) or a valid email.")
         return {"draft":d}
+    # Servicio: el nombre completo manda, salvo que el mensaje nombre además algo propio de otro
+    # servicio ("corte con barba"). En ese caso, o si solo coincide una palabra, decide el LLM:
+    # su propuesta ya está validada contra el catálogo.
     services = menu["services"]
-    matches = [s for s in services if has(text,s["name"])]
-    if not matches:
-        matches = [s for s in services if any(len(w)>3 and has(text,w) for w in normalized(s["name"]).split())]
-    if len(matches)==1:
-        if d.service_id != matches[0]["id"]:
+    words = {s["id"]: {w for w in normalized(s["name"]).split() if len(w)>3 and has(text,w)} for s in services}
+    exact = [s for s in services if has(text,s["name"])]
+    matches = exact or [s for s in services if words[s["id"]]]
+    service_id = matches[0]["id"] if len(matches)==1 else None
+    sure = len(exact)==1 and not any(words[s["id"]] - words[service_id] for s in services)
+    if service_id is not None and not sure:
+        service_id = hints.get("service_id", service_id)
+    if service_id is not None:
+        if d.service_id != service_id:
             d.professional_id = None
-        d.service_id = matches[0]["id"]
+        d.service_id = service_id
     members = [p for p in menu["team"] if has(text,p["name"])]
     if len(members)==1:
         d.professional_id = members[0]["id"]
     elif has(text,"cualquiera") or has(text,"anyone"):
         d.professional_id = None
+    # Día y hora: las reglas inequívocas mandan; en las dudosas el LLM precisa dentro de sus límites.
+    today = current_day(state)
     try:
-        day = find_day(text, datetime.now(LOCAL).date())
+        day = find_day(text, today)
     except ValueError:
         return respond(d,"day","Escribe una fecha válida (AAAA-MM-DD)." if es else "Enter a valid date (YYYY-MM-DD).")
     if day.mentioned:
         # "La semana que viene" sin día concreto borra el día anterior: el chat lo preguntará.
-        d.day = day.value
+        d.day = choose_day(day, hints.get("day"), today)
     clock = find_clock(text)
     if clock.value:
-        d.clock = clock.value
-    # Las reglas tienen prioridad; el LLM solo completa lo que ellas no reconocieron.
-    for field in ("service_id", "professional_id", "day", "clock", "name"):
+        d.clock = choose_clock(clock, hints.get("clock"))
+    # En lo que las reglas no reconocieron, el LLM completa los campos que sigan vacíos.
+    fill = ("service_id", "professional_id", "clock", "name") + (() if day.mentioned else ("day",))
+    for field in fill:
         if getattr(d, field) in (None, "") and field in hints:
             setattr(d, field, hints[field])
     if (re.search(r"\b(con|with)\s+\w+",text) and not members and "professional_id" not in hints

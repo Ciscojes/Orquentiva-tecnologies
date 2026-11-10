@@ -115,3 +115,66 @@ def test_rules_understand_day_after_tomorrow(client, monkeypatch):
     reply = client.post("/book/alfa/chat", json={"message": "Quiero un corte con Ana pasado mañana"}).json()
     expected = (datetime.now(LOCAL) + timedelta(days=2)).date().isoformat()
     assert reply["draft"]["day"] == expected
+
+
+# --- Prioridad entre reglas y LLM (fecha fija: martes 10 de noviembre de 2026) ---
+
+CATALOG = {"services": [{"id": 1, "name": "Corte"}, {"id": 2, "name": "Corte y barba"}, {"id": 3, "name": "Tinte de cabello"}],
+           "team": [{"id": 7, "name": "Ana", "service_ids": [1, 2, 3]}]}
+
+
+def merged(message, hints):
+    """Borrador tras aplicar las reglas a un mensaje con una propuesta del LLM ya validada."""
+    from datetime import date
+    from app.routes.booking_chat import Turn, interpret
+    state = {"turn": Turn(message=message), "menu": CATALOG, "hints": hints, "today": date(2026, 11, 10)}
+    return interpret(state)["draft"]
+
+
+def test_unambiguous_rules_beat_the_llm():
+    from datetime import date
+    draft = merged("mañana a las 10", {"day": date(2026, 11, 20), "clock": "12:00"})
+    assert (draft.day, draft.clock) == (date(2026, 11, 11), "10:00")
+    assert merged("hoy a las 3 pm", {"day": date(2026, 11, 12), "clock": "03:00"}).clock == "15:00"
+
+
+def test_llm_may_move_the_week_but_not_the_weekday():
+    from datetime import date
+    # "viernes 20": las reglas solo ven "viernes" (13); el LLM lee el número y sigue siendo viernes.
+    assert merged("el viernes 20", {"day": date(2026, 11, 20)}).day == date(2026, 11, 20)
+    # Un jueves, o un viernes pasado, contradice el día nombrado: mandan las reglas.
+    assert merged("el viernes", {"day": date(2026, 11, 19)}).day == date(2026, 11, 13)
+    assert merged("el viernes", {"day": date(2026, 11, 6)}).day == date(2026, 11, 13)
+    assert merged("el viernes", {}).day == date(2026, 11, 13)
+    # Hoy es martes: "el martes" es el siguiente, aunque el LLM proponga hoy.
+    assert merged("el martes", {"day": date(2026, 11, 10)}).day == date(2026, 11, 17)
+    assert merged("dentro de dos semanas, el martes", {"day": date(2026, 11, 24)}).day == date(2026, 11, 24)
+
+
+def test_next_week_accepts_only_llm_days_inside_that_week():
+    from datetime import date
+    message = "la semana que viene a media mañana"
+    assert merged(message, {"day": date(2026, 11, 18), "clock": "10:00"}).day == date(2026, 11, 18)
+    assert merged(message, {"day": date(2026, 11, 18), "clock": "10:00"}).clock == "10:00"
+    assert merged(message, {"day": date(2026, 11, 11)}).day is None
+    assert merged(message, {"day": date(2026, 11, 25)}).day is None
+    assert merged(message, {}).day is None
+
+
+def test_llm_only_resolves_morning_or_afternoon_for_a_doubtful_hour():
+    assert merged("a las 4", {"clock": "16:00"}).clock == "16:00"
+    assert merged("a las 4", {"clock": "17:00"}).clock == "04:00"
+    assert merged("a las 4", {}).clock == "04:00"
+    assert merged("a las 4 de la tarde", {"clock": "04:00"}).clock == "16:00"
+
+
+def test_llm_decides_the_service_when_the_rule_match_is_partial():
+    # Nombre completo y único: mandan las reglas.
+    assert merged("quiero un tinte de cabello", {"service_id": 1}).service_id == 3
+    # Solo coincide una palabra ("cabello"): decide el LLM si propone algo.
+    assert merged("arreglarme el cabello", {"service_id": 1}).service_id == 1
+    assert merged("arreglarme el cabello", {}).service_id == 3
+    # "Corte" es exacto, pero el mensaje también apunta a "Corte y barba".
+    assert merged("un corte con barba", {"service_id": 2, "professional_id": 7}).service_id == 2
+    # "Corte" a secas es un nombre completo aunque otro servicio comparta la palabra.
+    assert merged("un corte", {"service_id": 2}).service_id == 1
