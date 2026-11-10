@@ -21,7 +21,7 @@ Los pequeños negocios necesitan atender consultas y coordinar citas sin mezclar
 
 ### Cómo usa la IA el chat
 
-El grafo de LangGraph tiene tres nodos: `understand` (LLM opcional), `interpret` (reglas) y `availability` (agenda). Las reglas tienen prioridad y el LLM completa lo que no reconocen. Cada campo propuesto por el modelo se valida contra el catálogo del negocio; si el LLM falla, tarda más de 8 s o se supera el límite de 20 llamadas por IP y minuto, el chat sigue solo con reglas. Detalle en [SPEC-014](specs/014-llm-interpretation/spec.md).
+El grafo de LangGraph tiene tres nodos: `understand` (LLM opcional), `interpret` (reglas) y `availability` (agenda). Las reglas mandan cuando el patrón es inequívoco (fecha AAAA-MM-DD, «hoy», «mañana», hora con «am/pm» o «de la tarde», nombre completo de un servicio) y el LLM completa lo que no reconocen. En lo dudoso el LLM precisa dentro de límites que las reglas sí conocen: con «el viernes» puede cambiar de semana pero no de día, con «la semana que viene» solo vale un día de esa semana, y con «a las 4» solo elige entre las 04:00 y las 16:00. Cada campo propuesto por el modelo se valida contra el catálogo del negocio; si el LLM falla, tarda más de 8 s o se supera el límite de 20 llamadas por IP y minuto, el chat sigue solo con reglas. Detalle en [SPEC-014](specs/014-llm-interpretation/spec.md).
 
 Las preguntas sobre el negocio usan RAG ([SPEC-015](specs/015-rag/spec.md)):
 
@@ -55,7 +55,7 @@ Sin estas variables el comportamiento es determinista y la consulta de política
 | Verificación | pytest, TestClient, PostgreSQL temporal, TypeScript, oxlint y GitHub Actions |
 | Despliegue | Docker: una imagen con API y frontend en el mismo origen |
 
-Las versiones de frontend se resuelven con frontend/package-lock.json. requirements.txt acota las dependencias Python y fija LangGraph. Python 3.13 en local y en GitHub Actions. La demostración local opcional usa SQLite para facilitar la revisión, mientras que el desarrollo habitual usa PostgreSQL.
+Las versiones de frontend se resuelven con frontend/package-lock.json. requirements.txt acota las dependencias Python y fija LangGraph; requirements-dev.txt añade pytest. Python 3.13 en local y en GitHub Actions. La demostración local opcional usa SQLite para facilitar la revisión, mientras que el desarrollo habitual usa PostgreSQL.
 
 ## Instalación y ejecución
 
@@ -64,7 +64,7 @@ Requisitos: Python 3.13, Node.js/npm compatible con el proyecto y, para el modo 
 ```powershell
 py -3.13 -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
+python -m pip install -r requirements-dev.txt
 Set-Location frontend
 npm ci
 Set-Location ..
@@ -105,8 +105,10 @@ Las contraseñas se solicitan sin mostrarlas. En otra terminal ejecutar .\script
 ## Estructura
 
 ```text
-app/                    API, modelos, seguridad y agenda
-  routes/               Autenticación, paneles, reservas, chat y documentos
+app/                    API, modelos, seguridad y reglas de fecha y hora
+  routes/               Solo HTTP: autenticación, paneles, reservas, chat y documentos
+  services/             Lógica: agenda, chat (grafo), RAG y límites de uso
+evals/                  Frases de evaluación de la extracción del chat
 frontend/src/           Interfaz React y estilos
 alembic/versions/       Historial de migraciones
 scripts/                Preparación, arranque y validación
@@ -114,7 +116,8 @@ tests/                  Pruebas aisladas y 30 escenarios de aceptación
 specs/                  Especificaciones y decisiones por incremento
 docs/                   Arquitectura, operación y resultados
 seed.py                 Dos negocios y catálogo ficticio inicial
-requirements.txt        Dependencias Python
+requirements.txt        Dependencias de la aplicación
+requirements-dev.txt    Las anteriores más pytest
 Dockerfile              Imagen de despliegue (API + frontend)
 ```
 
@@ -130,7 +133,18 @@ npm run lint
 
 Las pruebas pytest utilizan SQLite temporal. verify_postgres inicia un PostgreSQL temporal limitado a este equipo, valida migraciones y flujos, y lo detiene. No utiliza .env ni la base habitual.
 
-Resultado registrado: 175 pruebas aprobadas, incluidas 30 de aceptación y 17 del LLM y del RAG con el modelo simulado. También se comprobó PostgreSQL temporal y la compilación y lint del frontend. Consulte la [Evaluación inicial](docs/evaluation-012/informe-evaluacion.md) para alcance, fechas y límites.
+Resultado registrado: 234 pruebas aprobadas, incluidas 30 de aceptación, las del LLM y del RAG con el modelo simulado, las reglas de fecha y hora con fecha fija y la vigilancia de capas. También se comprobó PostgreSQL temporal y la compilación y lint del frontend. Consulte la [Evaluación inicial](docs/evaluation-012/informe-evaluacion.md) para alcance, fechas y límites.
+
+### Evaluación de la extracción del chat
+
+`evals/extraction_cases.json` contiene 40 frases en español e inglés con el resultado esperado por campo. `scripts/eval_llm.py` mide precisión por campo, casos completos, llamadas fallidas y latencia, y compara solo reglas, la propuesta del LLM y reglas + LLM ([SPEC-017](specs/017-date-rules-and-extraction-eval/spec.md)).
+
+```powershell
+python scripts/eval_llm.py --rules-only                                        # sin clave ni red
+python scripts/eval_llm.py --delay 2 --report docs/evaluation-017/informe-extraccion.md   # con LLM_API_KEY y LLM_MODEL
+```
+
+Medición solo con reglas: 21 de 40 frases completas (día 37/40, hora 34/38, servicio 29/40); ver [informe](docs/evaluation-017/informe-solo-reglas.md). La medición con un modelo real está pendiente de ejecutar y no se afirma ningún resultado sobre ella.
 
 ## Arquitectura, seguridad y límites
 
