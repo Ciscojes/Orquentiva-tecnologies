@@ -4,7 +4,7 @@ Flujo: understand (LLM opcional) -> interpret (reglas) -> availability (agenda).
 """
 import re
 import unicodedata
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from typing import Literal, TypedDict
 from fastapi import APIRouter, Request
 from langgraph.graph import END, START, StateGraph
@@ -21,6 +21,7 @@ from app.routes.public_booking import catalog
 from app.routes.team import available
 from app.routes.knowledge import answer, policy_question
 from app.scheduling import LOCAL
+from app.timeparse import find_clock, find_day
 
 router = APIRouter(prefix="/book/{business_id}", tags=["chat"])
 # Limita las llamadas al LLM por IP; al superarlo el chat sigue solo con reglas.
@@ -114,32 +115,16 @@ def interpret(state: State):
         d.professional_id = members[0]["id"]
     elif has(text,"cualquiera") or has(text,"anyone"):
         d.professional_id = None
-    today = datetime.now(LOCAL).date()
-    iso = re.search(r"\b\d{4}-\d{2}-\d{2}\b",text)
-    if iso:
-        try:
-            d.day = date.fromisoformat(iso[0])
-        except ValueError:
-            return respond(d,"day","Escribe una fecha válida (AAAA-MM-DD)." if es else "Enter a valid date (YYYY-MM-DD).")
-    elif has(text,"pasado mañana") or has(text,"day after tomorrow"):
-        d.day = today + timedelta(days=2)
-    elif has(text,"mañana") or has(text,"tomorrow"):
-        d.day = today + timedelta(days=1)
-    elif has(text,"hoy") or has(text,"today"):
-        d.day = today
-    else:
-        for index,pair in enumerate(zip("lunes martes miercoles jueves viernes sabado domingo".split(),
-                                        "monday tuesday wednesday thursday friday saturday sunday".split())):
-            if any(has(text,w) for w in pair):
-                d.day = today + timedelta(days=(index-today.weekday())%7)
-                break
-    clock = re.search(r"(?:\ba las?\s+|\bat\s+|^)(\d{1,2})(?::([0-5]\d))?\s*(am|pm)?(?![\w:-])",text)
-    if clock:
-        hour = int(clock[1])
-        if clock[3] and 1 <= hour <= 12:
-            hour = hour % 12 + (12 if clock[3]=="pm" else 0)
-        if hour < 24:
-            d.clock = f"{hour:02d}:{clock[2] or '00'}"
+    try:
+        day = find_day(text, datetime.now(LOCAL).date())
+    except ValueError:
+        return respond(d,"day","Escribe una fecha válida (AAAA-MM-DD)." if es else "Enter a valid date (YYYY-MM-DD).")
+    if day.mentioned:
+        # "La semana que viene" sin día concreto borra el día anterior: el chat lo preguntará.
+        d.day = day.value
+    clock = find_clock(text)
+    if clock.value:
+        d.clock = clock.value
     # Las reglas tienen prioridad; el LLM solo completa lo que ellas no reconocieron.
     for field in ("service_id", "professional_id", "day", "clock", "name"):
         if getattr(d, field) in (None, "") and field in hints:
