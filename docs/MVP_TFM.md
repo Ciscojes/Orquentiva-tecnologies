@@ -1,6 +1,6 @@
 # ORQENTIVA AI — Alcance del MVP del TFM
 
-Fecha de actualización: 2026-11-04. Caso de demostración: dos barberías ficticias.
+Fecha de actualización: 2026-11-10. Caso de demostración: dos barberías ficticias.
 Se conserva la estructura del repositorio y la web corporativa; no se crea otro proyecto.
 
 ## Orden de los incrementos
@@ -18,6 +18,10 @@ Se conserva la estructura del repositorio y la web corporativa; no se crea otro 
 | 011 | Consulta extractiva de documentos publicados por empresa con referencias | Implementado y probado localmente |
 | 012 | Evaluación, documentación, slides y guion del vídeo | Documentación, demo aislada y pruebas de aceptación completadas |
 | 013 (ampliación posterior al TFM) | Reservas y consultas por WhatsApp | Piloto implementado y probado localmente; cuenta Meta y prueba real pendientes. Ver specs/013-whatsapp-booking/spec.md |
+| 014 | Extracción opcional con LLM | Implementada; evaluación real en el informe consolidado |
+| 015 | RAG generativo con citas y respaldo extractivo | Implementado |
+| 016 | Contacto del cliente en reservas | Implementado |
+| 017 | Reglas de fecha, prioridad y evaluación de extracción | Implementado |
 
 La numeración propuesta en el chat se desplaza porque SPEC-006 ya existía.
 No se anuncian login, paneles o IA como desplegados por haberlos especificado.
@@ -25,7 +29,7 @@ No se anuncian login, paneles o IA como desplegados por haberlos especificado.
 ## Condiciones del flujo final
 
 - Super Admin administra negocios. Cada business_admin solo opera sobre su empresa.
-- El agente recibe la empresa del contexto autenticado, nunca de una instrucción del usuario o documento.
+- Los paneles privados reciben la empresa de la sesión autenticada. El chat público recibe la empresa del enlace `/book/{business_id}`. Una instrucción del usuario o un documento no cambia ese contexto.
 - Debe pedir datos faltantes y confirmar la operación antes de reservar; solo comunica éxito tras confirmación del backend.
 – La agenda por profesional verifica horarios, duración y solapamientos antes de confirmar. El agente será un canal posterior.
 - RAG filtra documentos por negocio y reconoce información insuficiente.
@@ -42,4 +46,4 @@ No se ha enviado la entrega ni compartido acceso con terceros.
 
 ## Consolidación de la entrega
 
-README actualizado, demo aislada y evidencias en docs/evaluation-012. LangGraph combina reglas con un LLM opcional que solo interpreta (SPEC-014); las consultas documentales son extractivas.
+README actualizado, demo aislada y evidencias en docs/evaluation-012. LangGraph combina reglas y extracción opcional con LLM (SPEC-014/017). Las consultas documentales admiten generación con citas verificadas y respaldo extractivo (SPEC-015). Estado vigente y evidencias en [VERIFICACION_TFM.md](VERIFICACION_TFM.md).

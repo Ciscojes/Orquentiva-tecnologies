@@ -7,7 +7,7 @@ if ($Component -eq 'api') {
     if (-not (Test-Path -LiteralPath $db)) { throw 'Ejecuta primero python scripts/prepare_tfm_demo.py' }
     $env:DATABASE_URL = 'sqlite:///' + $db.Replace('\','/')
     $env:AUTH_COOKIE_SECURE = 'false'
-    $env:AUTH_ALLOWED_ORIGINS = 'http://127.0.0.1:5179'
+    $env:AUTH_ALLOWED_ORIGINS = 'http://127.0.0.1:5179,http://localhost:5179'
     & "$root\.venv\Scripts\python.exe" -m uvicorn app.main:app --host 127.0.0.1 --port 8002
 } else {
     Set-Location -LiteralPath (Join-Path $root 'frontend')

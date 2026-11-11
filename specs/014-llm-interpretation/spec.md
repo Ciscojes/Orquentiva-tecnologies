@@ -1,5 +1,8 @@
 # SPEC-014 — Interpretación opcional con LLM
 
+> Alcance histórico de este incremento. SPEC-015 amplía la consulta documental con generación opcional mediante LLM y citas verificadas; las restricciones extractivas de este documento no describen todo el estado actual.
+
+
 ## Objetivo
 Entender solicitudes de reserva en lenguaje libre sin perder las garantías del flujo guiado.
 

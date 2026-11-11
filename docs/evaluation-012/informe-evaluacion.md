@@ -2,6 +2,8 @@
 
 Fecha: 6 de noviembre de 2026 (Costa Rica).
 
+Este informe conserva los resultados históricos del Sprint 012. Para la implementación y los pendientes actuales, consultar [verificación consolidada](../VERIFICACION_TFM.md).
+
 ## Resultado comprobado
 
 - 30/30 escenarios de aceptación aprobados: 10 informativos, 10 de reservas y 10 adversos.

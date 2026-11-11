@@ -32,7 +32,7 @@ super_admin administra negocios y crea usuarios. business_admin opera sobre la e
 5. La persona confirma en React. La interfaz envía la propuesta a POST /book/{business_id} con request_key.
 6. El backend revalida y persiste. Solo tras una respuesta correcta aparece «Cita confirmada».
 
-El LLM no escribe en la base de datos ni redacta la respuesta al cliente, y el mensaje se le envía marcado como texto no confiable. Si falla, tarda más de 8 segundos, responde algo que no es JSON o se supera el límite de 20 llamadas por IP y minuto, el chat continúa solo con reglas.
+En el flujo de reservas, el LLM no escribe en la base de datos ni redacta la respuesta al cliente (la generación documental se describe más abajo), y el mensaje se le envía marcado como texto no confiable. Si falla, tarda más de 8 segundos, responde algo que no es JSON o se supera el límite de 20 llamadas por IP y minuto, el chat continúa solo con reglas.
 
 La clave de solicitud evita duplicados por reintento. Una nueva solicitud a un turno ocupado recibe conflicto. En PostgreSQL, el bloqueo de negocio coordina las confirmaciones concurrentes. La validación SQLite no sustituye la de PostgreSQL.
 

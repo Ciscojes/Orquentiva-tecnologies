@@ -84,7 +84,7 @@ En otra terminal, desde la raíz:
 .\scripts\start_tfm_demo.ps1 -Component web
 ```
 
-Abrir http://127.0.0.1:5179/#access. El backend usa el puerto 8002. El preparador crea tfm-demo.sqlite3 con migraciones, dos negocios, usuarios ficticios, profesionales, horarios y políticas. Si la base ya existe, se detiene sin sobrescribirla. No lee .env ni modifica la base habitual.
+Abrir http://127.0.0.1:5179/#access (también se admite http://localhost:5179/#access). Mantener abiertas las dos terminales: `api` ejecuta el backend y el LLM configurado en `.env`; `web` sirve la interfaz. Usar el mismo hostname durante la sesión: las cookies de localhost y 127.0.0.1 son independientes. El backend usa el puerto 8002. El preparador crea tfm-demo.sqlite3 con migraciones, dos negocios, usuarios ficticios, profesionales, horarios y políticas. Si la base ya existe, se detiene sin sobrescribirla. No lee .env ni modifica la base habitual.
 
 Los usuarios de prueba están en la sección [Usuarios de prueba](#usuarios-de-prueba).
 
@@ -134,7 +134,7 @@ npm run lint
 
 Las pruebas pytest utilizan SQLite temporal. verify_postgres inicia un PostgreSQL temporal limitado a este equipo, valida migraciones y flujos, y lo detiene. No utiliza .env ni la base habitual.
 
-Resultado registrado: 234 pruebas aprobadas, incluidas 30 de aceptación, las del LLM y del RAG con el modelo simulado, las reglas de fecha y hora con fecha fija y la vigilancia de capas. También se comprobó PostgreSQL temporal y la compilación y lint del frontend. Consulte la [Evaluación inicial](docs/evaluation-012/informe-evaluacion.md) para alcance, fechas y límites.
+Resultado consolidado: 240 pruebas aprobadas, incluidas 30 de aceptación, las del LLM y del RAG con el modelo simulado, las reglas de fecha y hora con fecha fija y la vigilancia de capas. También se comprobó PostgreSQL temporal y la compilación y lint del frontend. Consulte la [verificación consolidada](docs/VERIFICACION_TFM.md) para el estado vigente y la [evaluación inicial](docs/evaluation-012/informe-evaluacion.md) como evidencia histórica.
 
 ### Evaluación de la extracción del chat
 
@@ -145,13 +145,13 @@ python scripts/eval_llm.py --rules-only                                        #
 python scripts/eval_llm.py --delay 2 --report docs/evaluation-017/informe-extraccion.md   # con LLM_API_KEY y LLM_MODEL
 ```
 
-Medición solo con reglas: 21 de 40 frases completas (día 37/40, hora 34/38, servicio 29/40); ver [informe](docs/evaluation-017/informe-solo-reglas.md). La medición con un modelo real está pendiente de ejecutar y no se afirma ningún resultado sobre ella.
+Medición solo con reglas: 21 de 40 frases completas (día 37/40, hora 34/38, servicio 29/40); ver [informe](docs/evaluation-017/informe-solo-reglas.md). La medición real con `openai/gpt-oss-20b` obtuvo 39/40 casos completos con reglas + LLM, 0/40 llamadas fallidas y latencia mediana de 1,46 s; ver [informe de extracción](docs/evaluation-017/informe-extraccion.md). Es una ejecución sobre casos ficticios conocidos, no una garantía general de exactitud.
 
 ## Arquitectura, seguridad y límites
 
 Consulte [Arquitectura](docs/ARQUITECTURA_TFM.md). Las autorizaciones se comprueban en la API. Las fechas se guardan en UTC y la agenda se presenta en horario de Costa Rica. No hay registro público, recuperación de contraseña ni MFA. Los límites de uso se mantienen en memoria por proceso. La publicación exige HTTPS y configuración de origen; ver [Despliegue](#despliegue). La demo con contraseña conocida es exclusivamente local y contiene datos ficticios.
 
-WhatsApp queda como piloto sin conectar. No se incluyen voz, pagos, suscripciones ni n8n. El LLM solo interpreta mensajes; no genera respuestas. La evaluación es de un MVP y no acredita disponibilidad o seguridad de producción.
+WhatsApp queda como piloto sin conectar. No se incluyen voz, pagos, suscripciones ni n8n. El LLM propone campos para las reservas y puede redactar respuestas documentales con citas verificadas (SPEC-015). No confirma reservas ni escribe en la base de datos. La evaluación es de un MVP y no acredita disponibilidad o seguridad de producción.
 
 ## Despliegue
 

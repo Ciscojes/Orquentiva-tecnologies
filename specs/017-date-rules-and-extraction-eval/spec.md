@@ -33,4 +33,4 @@ Fechas escritas con número de día y mes sin LLM («el 25 de noviembre»), hora
 - `tests/test_extraction_eval.py`: coherencia del conjunto, piso de las reglas y garantía de que las reglas no empeoran a un LLM que acierta.
 - `tests/test_architecture.py`: dependencias entre capas.
 - Con el mismo conjunto, el código anterior resolvía 15 de 40 frases completas solo con reglas (día 32/40, hora 29/38); el actual, 21 de 40 (día 37/40, hora 34/38).
-- La medición con un modelo real no se ha ejecutado: requiere clave y se lanza con `scripts/eval_llm.py`.
+- La medición real del 10 de noviembre de 2026 con `openai/gpt-oss-20b` obtuvo 39/40 casos completos al combinar reglas y LLM (0 llamadas fallidas). Ver `docs/evaluation-017/informe-extraccion.md`; repetir con `scripts/eval_llm.py`. El fallo restante confunde a la profesional Ana con el cliente; sigue siendo necesaria la confirmación explícita.
