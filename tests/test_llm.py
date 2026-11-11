@@ -178,3 +178,54 @@ def test_llm_decides_the_service_when_the_rule_match_is_partial():
     assert merged("un corte con barba", {"service_id": 2, "professional_id": 7}).service_id == 2
     # "Corte" a secas es un nombre completo aunque otro servicio comparta la palabra.
     assert merged("un corte", {"service_id": 2}).service_id == 1
+
+
+# --- Activación desde el archivo .env ---
+
+def test_env_file_activates_the_llm(tmp_path, monkeypatch):
+    for key in ("LLM_API_KEY", "LLM_MODEL", "LLM_BASE_URL"):
+        monkeypatch.delenv(key, raising=False)
+    env = tmp_path / ".env"
+    env.write_text("POSTGRES_PASSWORD=secreta\nOTRA=1\nLLM_API_KEY=clave-de-prueba\nLLM_MODEL=modelo\n"
+                   "LLM_BASE_URL=https://ejemplo.test/v1\n", encoding="utf-8")
+    monkeypatch.delenv("POSTGRES_PASSWORD", raising=False)
+    assert "LLM inactivo" in llm.status() and "LLM_API_KEY y LLM_MODEL" in llm.status()
+    llm.load_env_file(env)
+    assert llm.enabled()
+    assert llm.status() == "LLM activo: modelo modelo en https://ejemplo.test/v1"
+    assert "clave-de-prueba" not in llm.status()
+    # Solo se copian las variables del LLM; la base de datos sigue con su propia configuración.
+    import os
+    assert "POSTGRES_PASSWORD" not in os.environ and "OTRA" not in os.environ
+    for key in ("LLM_API_KEY", "LLM_MODEL", "LLM_BASE_URL"):
+        monkeypatch.delenv(key)
+
+
+def test_terminal_takes_priority_over_env_file(tmp_path, monkeypatch):
+    env = tmp_path / ".env"
+    env.write_text("LLM_API_KEY=del-archivo\nLLM_MODEL=del-archivo\n", encoding="utf-8")
+    monkeypatch.setenv("LLM_API_KEY", "de-la-terminal")
+    monkeypatch.setenv("LLM_MODEL", "de-la-terminal")
+    llm.load_env_file(env)
+    import os
+    assert os.environ["LLM_MODEL"] == "de-la-terminal"
+
+
+def test_env_file_without_key_or_missing_keeps_rules_only(tmp_path, monkeypatch):
+    monkeypatch.delenv("LLM_API_KEY", raising=False)
+    monkeypatch.setenv("LLM_MODEL", "modelo")
+    env = tmp_path / ".env"
+    env.write_text("LLM_API_KEY=\n", encoding="utf-8")
+    llm.load_env_file(env)
+    llm.load_env_file(tmp_path / "no-existe.env")
+    assert not llm.enabled()
+    assert llm.status() == "LLM inactivo: el chat usa solo reglas (falta LLM_API_KEY en el archivo .env)"
+
+
+def test_startup_reports_llm_status(client, llm_on, caplog):
+    import logging
+    from fastapi.testclient import TestClient
+    from app.main import app
+    with caplog.at_level(logging.INFO, logger=llm.logger.name), TestClient(app):
+        pass
+    assert "LLM activo: modelo test-model" in caplog.text

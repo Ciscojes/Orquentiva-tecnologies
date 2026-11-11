@@ -1,5 +1,6 @@
 """API multiempresa de ORQENTIVA Technologies con sesiones revocables."""
 import os
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -9,6 +10,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.exc import SQLAlchemyError
 
+from app import llm
 from app.routes.admin import router as admin_router
 from app.routes.appointments import router as appointments_router
 from app.routes.auth import router as auth_router
@@ -20,7 +22,17 @@ from app.routes.public_booking import router as public_booking_router
 from app.routes.team import router as team_router
 from app.routes.whatsapp import router as whatsapp_router
 
-app = FastAPI(title="ORQENTIVA Technologies", version="0.2.0", description="API educativa multiempresa")
+
+
+@asynccontextmanager
+async def lifespan(app):
+    # Al arrancar, la terminal de la API dice si el chat usará el LLM o solo reglas.
+    (llm.logger.info if llm.enabled() else llm.logger.warning)(llm.status())
+    yield
+
+
+app = FastAPI(title="ORQENTIVA Technologies", version="0.2.0", description="API educativa multiempresa",
+              lifespan=lifespan)
 
 for router in (leads_router, auth_router, admin_router, client_router, team_router, public_booking_router,
                booking_chat_router, knowledge_router, whatsapp_router, appointments_router):

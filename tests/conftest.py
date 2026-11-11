@@ -7,6 +7,9 @@ import pytest
 _temporary = tempfile.TemporaryDirectory()
 os.environ["DATABASE_URL"] = "sqlite:///" + str(Path(_temporary.name) / "orm.sqlite3")
 os.environ["ORQENTIVA_DB"] = str(Path(_temporary.name) / "demo.sqlite3")
+# Vacías antes de importar la aplicación: la suite nunca usa la clave real del archivo .env.
+os.environ["LLM_API_KEY"] = ""
+os.environ["LLM_MODEL"] = ""
 
 
 @pytest.fixture(scope="session", autouse=True)

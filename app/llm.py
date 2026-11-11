@@ -1,8 +1,9 @@
 """LLM opcional (API compatible con OpenAI) para el chat de reservas y el RAG.
 
 Se activa con LLM_API_KEY y LLM_MODEL; LLM_BASE_URL permite usar otro proveedor
-compatible (OpenAI, Groq, OpenRouter, Ollama...). Sin esas variables el chat
-funciona solo con reglas y la consulta documental es extractiva.
+compatible (OpenAI, Groq, OpenRouter, Ollama...). Las tres se leen del archivo .env
+del proyecto al importar este módulo; lo definido en la terminal tiene prioridad.
+Sin esas variables el chat funciona solo con reglas y la consulta documental es extractiva.
 
 Dos usos, ambos validados por el servidor:
 - extract: propone campos de reserva; nunca escribe en la base de datos.
@@ -14,8 +15,10 @@ import logging
 import os
 import re
 from datetime import date, timedelta
+from pathlib import Path
 
 import httpx
+from dotenv import dotenv_values
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 TIMEOUT_SECONDS = 8.0
@@ -23,6 +26,17 @@ TIMEOUT_SECONDS = 8.0
 logger = logging.getLogger("uvicorn.error.llm")
 WEEKDAYS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
 DEFAULT_BASE_URL = "https://api.openai.com/v1"
+ENV_FILE = Path(__file__).resolve().parents[1] / ".env"
+
+
+def load_env_file(path: Path = ENV_FILE) -> None:
+    """Copia al entorno las variables LLM_* del .env que la terminal no haya definido."""
+    for key, value in dotenv_values(path).items():
+        if key.startswith("LLM_") and value and key not in os.environ:
+            os.environ[key] = value
+
+
+load_env_file()
 
 SYSTEM_PROMPT = """Extraes datos de una solicitud de reserva para un negocio.
 Responde solo con un objeto JSON con estas claves:
@@ -49,6 +63,14 @@ class Hints(BaseModel):
 
 def enabled() -> bool:
     return bool(os.getenv("LLM_API_KEY") and os.getenv("LLM_MODEL"))
+
+
+def status() -> str:
+    """Una línea para la terminal al arrancar la API; nunca incluye la clave."""
+    if enabled():
+        return f"LLM activo: modelo {os.environ['LLM_MODEL']} en {os.getenv('LLM_BASE_URL', DEFAULT_BASE_URL)}"
+    missing = " y ".join(key for key in ("LLM_API_KEY", "LLM_MODEL") if not os.getenv(key))
+    return f"LLM inactivo: el chat usa solo reglas (falta {missing} en el archivo .env)"
 
 
 def valid_name(value: str) -> bool:

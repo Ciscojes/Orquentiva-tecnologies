@@ -31,15 +31,16 @@ Las preguntas sobre el negocio usan RAG ([SPEC-015](specs/015-rag/spec.md)):
 
 El chat marca las respuestas generadas («Respuesta redactada con IA a partir de:») y siempre muestra las fuentes.
 
-Para activarlo, definir antes de arrancar la API:
+Para activarlo, escribir la configuración una sola vez en el archivo `.env` de la raíz del proyecto (no se sube a git):
 
-```powershell
+```dotenv
 # Ejemplo con Groq (plan gratuito, probado con openai/gpt-oss-20b)
-$env:LLM_API_KEY = "tu-clave"
-$env:LLM_MODEL = "openai/gpt-oss-20b"
-$env:LLM_BASE_URL = "https://api.groq.com/openai/v1"
-python scripts/check_llm.py   # comprueba la clave y lista los modelos si falla
+LLM_API_KEY=tu-clave
+LLM_MODEL=openai/gpt-oss-20b
+LLM_BASE_URL=https://api.groq.com/openai/v1
 ```
+
+La API lee esas variables al arrancar, también en la demo con SQLite, y lo indica en su terminal: `LLM activo: modelo ... en ...` o `LLM inactivo: el chat usa solo reglas (...)`. Una variable definida en la terminal (`$env:LLM_MODEL = "..."`) tiene prioridad sobre el archivo. `python scripts/check_llm.py` comprueba la clave y lista los modelos si falla. Las pruebas nunca usan la clave real.
 
 Sin estas variables el comportamiento es determinista y la consulta de políticas devuelve párrafos literales. La recuperación no usa embeddings: los documentos de un negocio son pocos y así no hay costos ni dependencias extra. El proyecto se desarrolló con especificaciones por incremento (`specs/`) y asistentes de IA como apoyo de ingeniería.
 
