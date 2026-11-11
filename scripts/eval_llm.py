@@ -162,9 +162,13 @@ def main():
     text = render(report, None if args.rules_only else os.environ["LLM_MODEL"], len(cases))
     print(text)
     if args.report:
-        args.report.parent.mkdir(parents=True, exist_ok=True)
-        args.report.write_text(text, encoding="utf-8")
-        print(f"Informe guardado en {args.report}")
+        # El informe solo se guarda como .md dentro del proyecto, nunca en otra ruta del equipo.
+        target = (ROOT / args.report).resolve()
+        if not target.is_relative_to(ROOT) or target.suffix != ".md":
+            raise SystemExit("--report debe ser un archivo .md dentro del proyecto.")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(text, encoding="utf-8")
+        print(f"Informe guardado en {target}")
 
 
 if __name__ == "__main__":
