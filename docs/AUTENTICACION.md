@@ -94,3 +94,14 @@ La migración de desarrollo ya se aplicó el 2026-11-04 con respaldo y comprobac
 de datos existentes. La creación de cuentas continúa siendo explícita.
 
 SPEC-008: desactivar un negocio revoca las sesiones de sus usuarios y bloquea nuevos logins. Reactivarlo requiere iniciar sesión de nuevo.
+
+## Demo aislada del TFM
+
+La demo usa los puertos web 5179 y API 8002, con tfm-demo.sqlite3. Ejecutar
+scripts/start_tfm_demo.ps1 con -Component api y -Component web en terminales distintas.
+Se admiten http://127.0.0.1:5179 y http://localhost:5179; conservar el mismo hostname
+al navegar para mantener la cookie. Las tres cuentas ficticias del README tienen
+la contraseña Orqentiva-Demo-2026!, exclusivamente en esta base de demostración.
+El entorno PostgreSQL habitual (5178/8001) no recibe esas cuentas automáticamente.
+Un 403 puede indicar un Origin no autorizado; un 401 indica credenciales o cuenta
+no válidas; un 429 requiere esperar al límite de intentos. No borrar la base para resolverlo.

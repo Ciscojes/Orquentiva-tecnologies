@@ -2,7 +2,6 @@
 import hashlib
 import hmac
 import json
-import os
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Request
@@ -11,16 +10,10 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from app.models import Business, WhatsAppMessage
-from app.routes.client import Database
+from app.deps import Database
+from app.services.whatsapp import setting
 
 router = APIRouter(prefix="/integrations/whatsapp", tags=["whatsapp"])
-
-
-def setting(name):
-    value = os.getenv("WHATSAPP_" + name, "")
-    if not value:
-        raise HTTPException(503, "Canal WhatsApp sin configurar")
-    return value
 
 
 @router.get("/webhook", response_class=PlainTextResponse)

@@ -17,7 +17,7 @@ MENU = {"services": [{"id": 1, "name": "Corte demo"}], "team": [{"id": 1, "name"
 MESSAGE = "me urge un recorte pasado mañana a las diez y media con Ana"
 
 if not llm.enabled():
-    raise SystemExit("Faltan LLM_API_KEY o LLM_MODEL en esta terminal.")
+    raise SystemExit("Faltan LLM_API_KEY o LLM_MODEL en el archivo .env (o en esta terminal).")
 print(f"Proveedor: {os.getenv('LLM_BASE_URL', llm.DEFAULT_BASE_URL)} · modelo: {os.environ['LLM_MODEL']}")
 print(f"Mensaje de prueba: {MESSAGE}")
 result = llm.extract(MESSAGE, MENU, datetime.now(LOCAL).date(), "es")

@@ -21,7 +21,7 @@ Los pequeños negocios necesitan atender consultas y coordinar citas sin mezclar
 
 ### Cómo usa la IA el chat
 
-El grafo de LangGraph tiene tres nodos: `understand` (LLM opcional), `interpret` (reglas) y `availability` (agenda). Las reglas tienen prioridad y el LLM completa lo que no reconocen. Cada campo propuesto por el modelo se valida contra el catálogo del negocio; si el LLM falla, tarda más de 8 s o se supera el límite de 20 llamadas por IP y minuto, el chat sigue solo con reglas. Detalle en [SPEC-014](specs/014-llm-interpretation/spec.md).
+El grafo de LangGraph tiene tres nodos: `understand` (LLM opcional), `interpret` (reglas) y `availability` (agenda). Las reglas mandan cuando el patrón es inequívoco (fecha AAAA-MM-DD, «hoy», «mañana», hora con «am/pm» o «de la tarde», nombre completo de un servicio) y el LLM completa lo que no reconocen. En lo dudoso el LLM precisa dentro de límites que las reglas sí conocen: con «el viernes» puede cambiar de semana pero no de día, con «la semana que viene» solo vale un día de esa semana, y con «a las 4» solo elige entre las 04:00 y las 16:00. Cada campo propuesto por el modelo se valida contra el catálogo del negocio; si el LLM falla, tarda más de 8 s o se supera el límite de 20 llamadas por IP y minuto, el chat sigue solo con reglas. Detalle en [SPEC-014](specs/014-llm-interpretation/spec.md).
 
 Las preguntas sobre el negocio usan RAG ([SPEC-015](specs/015-rag/spec.md)):
 
@@ -31,15 +31,16 @@ Las preguntas sobre el negocio usan RAG ([SPEC-015](specs/015-rag/spec.md)):
 
 El chat marca las respuestas generadas («Respuesta redactada con IA a partir de:») y siempre muestra las fuentes.
 
-Para activarlo, definir antes de arrancar la API:
+Para activarlo, escribir la configuración una sola vez en el archivo `.env` de la raíz del proyecto (no se sube a git):
 
-```powershell
+```dotenv
 # Ejemplo con Groq (plan gratuito, probado con openai/gpt-oss-20b)
-$env:LLM_API_KEY = "tu-clave"
-$env:LLM_MODEL = "openai/gpt-oss-20b"
-$env:LLM_BASE_URL = "https://api.groq.com/openai/v1"
-python scripts/check_llm.py   # comprueba la clave y lista los modelos si falla
+LLM_API_KEY=tu-clave
+LLM_MODEL=openai/gpt-oss-20b
+LLM_BASE_URL=https://api.groq.com/openai/v1
 ```
+
+La API lee esas variables al arrancar, también en la demo con SQLite, y lo indica en su terminal: `LLM activo: modelo ... en ...` o `LLM inactivo: el chat usa solo reglas (...)`. Una variable definida en la terminal (`$env:LLM_MODEL = "..."`) tiene prioridad sobre el archivo. `python scripts/check_llm.py` comprueba la clave y lista los modelos si falla. Las pruebas nunca usan la clave real.
 
 Sin estas variables el comportamiento es determinista y la consulta de políticas devuelve párrafos literales. La recuperación no usa embeddings: los documentos de un negocio son pocos y así no hay costos ni dependencias extra. El proyecto se desarrolló con especificaciones por incremento (`specs/`) y asistentes de IA como apoyo de ingeniería.
 
@@ -55,7 +56,7 @@ Sin estas variables el comportamiento es determinista y la consulta de política
 | Verificación | pytest, TestClient, PostgreSQL temporal, TypeScript, oxlint y GitHub Actions |
 | Despliegue | Docker: una imagen con API y frontend en el mismo origen |
 
-Las versiones de frontend se resuelven con frontend/package-lock.json. requirements.txt acota las dependencias Python y fija LangGraph. Python 3.13 en local y en GitHub Actions. La demostración local opcional usa SQLite para facilitar la revisión, mientras que el desarrollo habitual usa PostgreSQL.
+Las versiones de frontend se resuelven con frontend/package-lock.json. requirements.txt acota las dependencias Python y fija LangGraph; requirements-dev.txt añade pytest. Python 3.13 en local y en GitHub Actions. La demostración local opcional usa SQLite para facilitar la revisión, mientras que el desarrollo habitual usa PostgreSQL.
 
 ## Instalación y ejecución
 
@@ -64,7 +65,7 @@ Requisitos: Python 3.13, Node.js/npm compatible con el proyecto y, para el modo 
 ```powershell
 py -3.13 -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
+python -m pip install -r requirements-dev.txt
 Set-Location frontend
 npm ci
 Set-Location ..
@@ -83,7 +84,7 @@ En otra terminal, desde la raíz:
 .\scripts\start_tfm_demo.ps1 -Component web
 ```
 
-Abrir http://127.0.0.1:5179/#access. El backend usa el puerto 8002. El preparador crea tfm-demo.sqlite3 con migraciones, dos negocios, usuarios ficticios, profesionales, horarios y políticas. Si la base ya existe, se detiene sin sobrescribirla. No lee .env ni modifica la base habitual.
+Abrir http://127.0.0.1:5179/#access (también se admite http://localhost:5179/#access). Mantener abiertas las dos terminales: `api` ejecuta el backend y el LLM configurado en `.env`; `web` sirve la interfaz. Usar el mismo hostname durante la sesión: las cookies de localhost y 127.0.0.1 son independientes. El backend usa el puerto 8002. El preparador crea tfm-demo.sqlite3 con migraciones, dos negocios, usuarios ficticios, profesionales, horarios y políticas. Si la base ya existe, se detiene sin sobrescribirla. No lee .env ni modifica la base habitual.
 
 Los usuarios de prueba están en la sección [Usuarios de prueba](#usuarios-de-prueba).
 
@@ -105,8 +106,10 @@ Las contraseñas se solicitan sin mostrarlas. En otra terminal ejecutar .\script
 ## Estructura
 
 ```text
-app/                    API, modelos, seguridad y agenda
-  routes/               Autenticación, paneles, reservas, chat y documentos
+app/                    API, modelos, seguridad y reglas de fecha y hora
+  routes/               Solo HTTP: autenticación, paneles, reservas, chat y documentos
+  services/             Lógica: agenda, chat (grafo), RAG y límites de uso
+evals/                  Frases de evaluación de la extracción del chat
 frontend/src/           Interfaz React y estilos
 alembic/versions/       Historial de migraciones
 scripts/                Preparación, arranque y validación
@@ -114,7 +117,8 @@ tests/                  Pruebas aisladas y 30 escenarios de aceptación
 specs/                  Especificaciones y decisiones por incremento
 docs/                   Arquitectura, operación y resultados
 seed.py                 Dos negocios y catálogo ficticio inicial
-requirements.txt        Dependencias Python
+requirements.txt        Dependencias de la aplicación
+requirements-dev.txt    Las anteriores más pytest
 Dockerfile              Imagen de despliegue (API + frontend)
 ```
 
@@ -130,13 +134,24 @@ npm run lint
 
 Las pruebas pytest utilizan SQLite temporal. verify_postgres inicia un PostgreSQL temporal limitado a este equipo, valida migraciones y flujos, y lo detiene. No utiliza .env ni la base habitual.
 
-Resultado registrado: 175 pruebas aprobadas, incluidas 30 de aceptación y 17 del LLM y del RAG con el modelo simulado. También se comprobó PostgreSQL temporal y la compilación y lint del frontend. Consulte la [Evaluación inicial](docs/evaluation-012/informe-evaluacion.md) para alcance, fechas y límites.
+Resultado consolidado: 240 pruebas aprobadas, incluidas 30 de aceptación, las del LLM y del RAG con el modelo simulado, las reglas de fecha y hora con fecha fija y la vigilancia de capas. También se comprobó PostgreSQL temporal y la compilación y lint del frontend. Consulte la [verificación consolidada](docs/VERIFICACION_TFM.md) para el estado vigente y la [evaluación inicial](docs/evaluation-012/informe-evaluacion.md) como evidencia histórica.
+
+### Evaluación de la extracción del chat
+
+`evals/extraction_cases.json` contiene 40 frases en español e inglés con el resultado esperado por campo. `scripts/eval_llm.py` mide precisión por campo, casos completos, llamadas fallidas y latencia, y compara solo reglas, la propuesta del LLM y reglas + LLM ([SPEC-017](specs/017-date-rules-and-extraction-eval/spec.md)).
+
+```powershell
+python scripts/eval_llm.py --rules-only                                        # sin clave ni red
+python scripts/eval_llm.py --delay 2 --report docs/evaluation-017/informe-extraccion.md   # con LLM_API_KEY y LLM_MODEL
+```
+
+Medición solo con reglas: 21 de 40 frases completas (día 37/40, hora 34/38, servicio 29/40); ver [informe](docs/evaluation-017/informe-solo-reglas.md). La medición real con `openai/gpt-oss-20b` obtuvo 39/40 casos completos con reglas + LLM, 0/40 llamadas fallidas y latencia mediana de 1,46 s; ver [informe de extracción](docs/evaluation-017/informe-extraccion.md). Es una ejecución sobre casos ficticios conocidos, no una garantía general de exactitud.
 
 ## Arquitectura, seguridad y límites
 
 Consulte [Arquitectura](docs/ARQUITECTURA_TFM.md). Las autorizaciones se comprueban en la API. Las fechas se guardan en UTC y la agenda se presenta en horario de Costa Rica. No hay registro público, recuperación de contraseña ni MFA. Los límites de uso se mantienen en memoria por proceso. La publicación exige HTTPS y configuración de origen; ver [Despliegue](#despliegue). La demo con contraseña conocida es exclusivamente local y contiene datos ficticios.
 
-WhatsApp queda como piloto sin conectar. No se incluyen voz, pagos, suscripciones ni n8n. El LLM solo interpreta mensajes; no genera respuestas. La evaluación es de un MVP y no acredita disponibilidad o seguridad de producción.
+WhatsApp queda como piloto sin conectar. No se incluyen voz, pagos, suscripciones ni n8n. El LLM propone campos para las reservas y puede redactar respuestas documentales con citas verificadas (SPEC-015). No confirma reservas ni escribe en la base de datos. La evaluación es de un MVP y no acredita disponibilidad o seguridad de producción.
 
 ## Despliegue
 

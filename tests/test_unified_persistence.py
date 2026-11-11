@@ -64,3 +64,15 @@ def test_booking_database_failure_is_private(client):
     assert "private" not in response.text
     session.rollback.assert_called_once()
     app.dependency_overrides.pop(current_business, None)
+
+
+def test_missing_database_configuration_fails_on_connect_not_on_import():
+    import pytest
+    from app.database import MISSING, make_engine
+    engine = make_engine(None, None)  # Crear el motor no conecta ni lanza errores.
+    with pytest.raises(RuntimeError, match="DATABASE_URL"):
+        engine.connect()
+    assert "POSTGRES_PASSWORD" in MISSING
+    assert make_engine("sqlite://", None).dialect.name == "sqlite"
+    local = make_engine(None, "solo-pruebas").url
+    assert (local.host, local.port, local.database) == ("127.0.0.1", 5434, "orqentiva_db")

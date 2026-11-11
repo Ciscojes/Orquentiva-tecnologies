@@ -18,10 +18,10 @@ from sqlalchemy import select, text
 from app.database import SessionLocal, engine
 from app.models import WhatsAppConversation, WhatsAppMessage
 from app import llm
-from app.routes.booking_chat import Draft, Turn, normalized, run_chat
-from app.routes.public_booking import public_business
-from app.routes.team import Confirmation, confirm_booking
-from app.routes.whatsapp import setting
+from app.schemas import Confirmation
+from app.services.agenda import confirm_booking, public_business
+from app.services.chat import Draft, Turn, normalized, run_chat
+from app.services.whatsapp import setting
 
 
 def utc(stamp):

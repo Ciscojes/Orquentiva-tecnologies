@@ -115,3 +115,117 @@ def test_rules_understand_day_after_tomorrow(client, monkeypatch):
     reply = client.post("/book/alfa/chat", json={"message": "Quiero un corte con Ana pasado mañana"}).json()
     expected = (datetime.now(LOCAL) + timedelta(days=2)).date().isoformat()
     assert reply["draft"]["day"] == expected
+
+
+# --- Prioridad entre reglas y LLM (fecha fija: martes 10 de noviembre de 2026) ---
+
+CATALOG = {"services": [{"id": 1, "name": "Corte"}, {"id": 2, "name": "Corte y barba"}, {"id": 3, "name": "Tinte de cabello"}],
+           "team": [{"id": 7, "name": "Ana", "service_ids": [1, 2, 3]}]}
+
+
+def merged(message, hints):
+    """Borrador tras aplicar las reglas a un mensaje con una propuesta del LLM ya validada."""
+    from datetime import date
+    from app.services.chat import Turn, interpret
+    state = {"turn": Turn(message=message), "menu": CATALOG, "hints": hints, "today": date(2026, 11, 10)}
+    return interpret(state)["draft"]
+
+
+def test_unambiguous_rules_beat_the_llm():
+    from datetime import date
+    draft = merged("mañana a las 10", {"day": date(2026, 11, 20), "clock": "12:00"})
+    assert (draft.day, draft.clock) == (date(2026, 11, 11), "10:00")
+    assert merged("hoy a las 3 pm", {"day": date(2026, 11, 12), "clock": "03:00"}).clock == "15:00"
+
+
+def test_llm_may_move_the_week_but_not_the_weekday():
+    from datetime import date
+    # "viernes 20": las reglas solo ven "viernes" (13); el LLM lee el número y sigue siendo viernes.
+    assert merged("el viernes 20", {"day": date(2026, 11, 20)}).day == date(2026, 11, 20)
+    # Un jueves, o un viernes pasado, contradice el día nombrado: mandan las reglas.
+    assert merged("el viernes", {"day": date(2026, 11, 19)}).day == date(2026, 11, 13)
+    assert merged("el viernes", {"day": date(2026, 11, 6)}).day == date(2026, 11, 13)
+    assert merged("el viernes", {}).day == date(2026, 11, 13)
+    # Hoy es martes: "el martes" es el siguiente, aunque el LLM proponga hoy.
+    assert merged("el martes", {"day": date(2026, 11, 10)}).day == date(2026, 11, 17)
+    assert merged("dentro de dos semanas, el martes", {"day": date(2026, 11, 24)}).day == date(2026, 11, 24)
+
+
+def test_next_week_accepts_only_llm_days_inside_that_week():
+    from datetime import date
+    message = "la semana que viene a media mañana"
+    assert merged(message, {"day": date(2026, 11, 18), "clock": "10:00"}).day == date(2026, 11, 18)
+    assert merged(message, {"day": date(2026, 11, 18), "clock": "10:00"}).clock == "10:00"
+    assert merged(message, {"day": date(2026, 11, 11)}).day is None
+    assert merged(message, {"day": date(2026, 11, 25)}).day is None
+    assert merged(message, {}).day is None
+
+
+def test_llm_only_resolves_morning_or_afternoon_for_a_doubtful_hour():
+    assert merged("a las 4", {"clock": "16:00"}).clock == "16:00"
+    assert merged("a las 4", {"clock": "17:00"}).clock == "04:00"
+    assert merged("a las 4", {}).clock == "04:00"
+    assert merged("a las 4 de la tarde", {"clock": "04:00"}).clock == "16:00"
+
+
+def test_llm_decides_the_service_when_the_rule_match_is_partial():
+    # Nombre completo y único: mandan las reglas.
+    assert merged("quiero un tinte de cabello", {"service_id": 1}).service_id == 3
+    # Solo coincide una palabra ("cabello"): decide el LLM si propone algo.
+    assert merged("arreglarme el cabello", {"service_id": 1}).service_id == 1
+    assert merged("arreglarme el cabello", {}).service_id == 3
+    # "Corte" es exacto, pero el mensaje también apunta a "Corte y barba".
+    assert merged("un corte con barba", {"service_id": 2, "professional_id": 7}).service_id == 2
+    # "Corte" a secas es un nombre completo aunque otro servicio comparta la palabra.
+    assert merged("un corte", {"service_id": 2}).service_id == 1
+
+
+# --- Activación desde el archivo .env ---
+
+def test_env_file_activates_the_llm(tmp_path, monkeypatch):
+    for key in ("LLM_API_KEY", "LLM_MODEL", "LLM_BASE_URL"):
+        monkeypatch.delenv(key, raising=False)
+    env = tmp_path / ".env"
+    env.write_text("POSTGRES_PASSWORD=secreta\nOTRA=1\nLLM_API_KEY=clave-de-prueba\nLLM_MODEL=modelo\n"
+                   "LLM_BASE_URL=https://ejemplo.test/v1\n", encoding="utf-8")
+    monkeypatch.delenv("POSTGRES_PASSWORD", raising=False)
+    assert "LLM inactivo" in llm.status() and "LLM_API_KEY y LLM_MODEL" in llm.status()
+    llm.load_env_file(env)
+    assert llm.enabled()
+    assert llm.status() == "LLM activo: modelo modelo en https://ejemplo.test/v1"
+    assert "clave-de-prueba" not in llm.status()
+    # Solo se copian las variables del LLM; la base de datos sigue con su propia configuración.
+    import os
+    assert "POSTGRES_PASSWORD" not in os.environ and "OTRA" not in os.environ
+    for key in ("LLM_API_KEY", "LLM_MODEL", "LLM_BASE_URL"):
+        monkeypatch.delenv(key)
+
+
+def test_terminal_takes_priority_over_env_file(tmp_path, monkeypatch):
+    env = tmp_path / ".env"
+    env.write_text("LLM_API_KEY=del-archivo\nLLM_MODEL=del-archivo\n", encoding="utf-8")
+    monkeypatch.setenv("LLM_API_KEY", "de-la-terminal")
+    monkeypatch.setenv("LLM_MODEL", "de-la-terminal")
+    llm.load_env_file(env)
+    import os
+    assert os.environ["LLM_MODEL"] == "de-la-terminal"
+
+
+def test_env_file_without_key_or_missing_keeps_rules_only(tmp_path, monkeypatch):
+    monkeypatch.delenv("LLM_API_KEY", raising=False)
+    monkeypatch.setenv("LLM_MODEL", "modelo")
+    env = tmp_path / ".env"
+    env.write_text("LLM_API_KEY=\n", encoding="utf-8")
+    llm.load_env_file(env)
+    llm.load_env_file(tmp_path / "no-existe.env")
+    assert not llm.enabled()
+    assert llm.status() == "LLM inactivo: el chat usa solo reglas (falta LLM_API_KEY en el archivo .env)"
+
+
+def test_startup_reports_llm_status(client, llm_on, caplog):
+    import logging
+    from fastapi.testclient import TestClient
+    from app.main import app
+    with caplog.at_level(logging.INFO, logger=llm.logger.name), TestClient(app):
+        pass
+    assert "LLM activo: modelo test-model" in caplog.text
