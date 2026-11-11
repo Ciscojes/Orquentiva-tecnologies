@@ -644,7 +644,11 @@ html { scroll-padding-top: calc(var(--header-height, 140px) + 12px); }
 .business-manager > .client-checkbox { display: flex; align-items: center; gap: 10px; min-height: 44px; }
 .business-manager > .client-checkbox input { width: 20px; height: 20px; accent-color: #087c78; }
 .booking-public label, .booking-public select { display: block; width: 100%; }
-.booking-public select { min-height: 44px; }
+.booking-public select { min-height: 44px; padding: 10px 13px; font: inherit; font-weight: 400; border: 1px solid #9bafc0; border-radius: 8px; color: #10253d; background: #f8fafc; }
+.booking-public select:focus-visible { outline: 3px solid #087c78; outline-offset: 2px; }
+/* El selector de modo del chat queda fuera del fieldset: igualarlo al resto del formulario. */
+.booking-chat > label { font-size: 14px; font-weight: 700; margin-bottom: 12px; }
+.booking-chat > .dashboard-secondary { margin-top: 12px; }
 .team-agenda .mobile-person { display: none; }
 @media(max-width:700px){
   .team-agenda thead,.team-agenda .empty { display:none; }
