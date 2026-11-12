@@ -1,0 +1,38 @@
+# Demostración completa en un solo comando, sin instalar Python ni Node:
+#
+#   docker compose -f compose.demo.yaml up --build
+#
+# Abre http://localhost:8000 (usuarios de prueba en el README). La base de datos es SQLite,
+# ficticia y temporal: se crea al arrancar y se descarta al detener el contenedor.
+# No usa ni modifica el PostgreSQL de compose.yaml.
+services:
+  demo:
+    build: .
+    container_name: orqentiva-demo
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      DATABASE_URL: sqlite:////data/tfm-demo.sqlite3
+      AUTH_COOKIE_SECURE: "false"
+      AUTH_ALLOWED_ORIGINS: http://localhost:8000,http://127.0.0.1:8000
+    # Opcional: si existe .env con LLM_API_KEY y LLM_MODEL, el chat usa el LLM; sin él, solo reglas.
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - ./scripts:/srv/scripts:ro
+    tmpfs:
+      - /data:mode=1777
+    # Prepara los datos de demostración (los mismos de scripts/prepare_tfm_demo.py) y arranca la aplicación.
+    command:
+      - sh
+      - -c
+      - >-
+        python -c "import pathlib, scripts.prepare_tfm_demo as demo;
+        demo.DB = pathlib.Path('/data/tfm-demo.sqlite3'); demo.main()"
+        && exec python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 6

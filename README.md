@@ -9,6 +9,7 @@ Los pequeños negocios necesitan atender consultas y coordinar citas sin mezclar
 ## Funcionalidades implementadas
 
 - Página comercial ES/EN y formulario de contacto que guarda solicitudes de posibles clientes.
+- Video de presentación en la página de inicio, con capítulos y subtítulos ES/EN. Se regenera a partir de la aplicación con un comando (ver [video/README.md](video/README.md)); la mención a WhatsApp que contiene es ilustrativa.
 - Inicio y cierre de sesión, roles super_admin y business_admin, sesiones revocables y contraseñas con Argon2.
 - Administrador: crear y activar negocios, habilitar agenda y crear cuentas de negocio.
 - Cliente: gestionar servicios, duración, horarios, profesionales y documentos. Consultar sus reservas.
@@ -71,6 +72,16 @@ npm ci
 Set-Location ..
 ```
 
+### Demostración con Docker (un solo comando)
+
+Solo requiere Docker Desktop; no hace falta instalar Python ni Node. Desde la raíz del proyecto:
+
+```powershell
+docker compose -f compose.demo.yaml up --build
+```
+
+Abrir http://localhost:8000 (acceso: http://localhost:8000/#access). La imagen compila el frontend y lo sirve junto a la API. Al arrancar crea una base SQLite ficticia con los mismos datos y [usuarios de prueba](#usuarios-de-prueba) que la demostración aislada; se descarta al detener el contenedor (Ctrl+C) y no toca PostgreSQL ni la base habitual. Las reservas públicas quedan en http://localhost:8000/#reservar/alfa. Si existe un archivo `.env` con `LLM_API_KEY` y `LLM_MODEL`, el chat usa el LLM; sin él funciona solo con reglas.
+
 ### Demostración aislada para el evaluador
 
 ```powershell
@@ -101,7 +112,7 @@ python scripts/create_user.py --email beta@example.com --role business_admin --b
 .\scripts\start_development.ps1 -Component api
 ```
 
-Las contraseñas se solicitan sin mostrarlas. En otra terminal ejecutar .\scripts\start_development.ps1 -Component web y abrir http://127.0.0.1:5178/#access. El backend habitual usa 8001. Seed crea catálogo inicial sin duración y sin profesionales: configurar estos datos desde el panel antes de reservar. Las cuentas del modo demostración no se crean en PostgreSQL automáticamente.
+Las contraseñas se solicitan sin mostrarlas. En otra terminal ejecutar .\scripts\start_development.ps1 -Component web y abrir http://127.0.0.1:5178/#access. Una vez creada la base y los usuarios, `.\scripts\iniciar.ps1` hace el arranque diario en un paso: inicia el PostgreSQL de `compose.yaml` con Docker, aplica las migraciones pendientes y abre la API y la web en dos ventanas. El backend habitual usa 8001. Seed crea catálogo inicial sin duración y sin profesionales: configurar estos datos desde el panel antes de reservar. Las cuentas del modo demostración no se crean en PostgreSQL automáticamente.
 
 ## Estructura
 
@@ -120,6 +131,8 @@ seed.py                 Dos negocios y catálogo ficticio inicial
 requirements.txt        Dependencias de la aplicación
 requirements-dev.txt    Las anteriores más pytest
 Dockerfile              Imagen de despliegue (API + frontend)
+compose.demo.yaml       Demostración completa con Docker
+video/                  Generación del video de presentación
 ```
 
 ## Pruebas y evidencia

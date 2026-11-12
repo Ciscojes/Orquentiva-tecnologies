@@ -1,0 +1,23 @@
+{
+  "duration": 77.84,
+  "chapters": [
+    {
+      "id": "que-es",
+      "es": "Qué es",
+      "en": "What it is",
+      "start": 0
+    },
+    {
+      "id": "como-funciona",
+      "es": "Cómo funciona",
+      "en": "How it works",
+      "start": 20.03
+    },
+    {
+      "id": "beneficios",
+      "es": "Beneficios",
+      "en": "Benefits",
+      "start": 58.73
+    }
+  ]
+}

@@ -3,6 +3,7 @@ import "./App.css";
 import ContactForm from "./components/ContactForm";
 import AccessPanel from "./components/AccessPanel";
 import ServiceCards from "./components/ServiceCards";
+import VideoPresentation from "./components/VideoPresentation";
 import type { Language } from "./services";
 
 // Traducciones de toda la página
@@ -258,6 +259,9 @@ function App() {
             </div>
           </div>
         </section>
+
+        {/* VIDEO DE PRESENTACIÓN */}
+        <VideoPresentation language={language} />
 
         {/* SERVICIOS Y SOLUCIONES */}
         <section className="section" id="services">

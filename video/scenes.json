@@ -1,0 +1,80 @@
+{
+  "chapters": [
+    {
+      "id": "que-es",
+      "label": "Qué es",
+      "label_en": "What it is"
+    },
+    {
+      "id": "como-funciona",
+      "label": "Cómo funciona",
+      "label_en": "How it works"
+    },
+    {
+      "id": "beneficios",
+      "label": "Beneficios",
+      "label_en": "Benefits"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "s1-problema",
+      "chapter": "que-es",
+      "title": "Atender bien toma tiempo",
+      "narration": "Las consultas repetidas y los mensajes sin responder consumen tu tiempo, y pueden dejar clientes sin atender. Entre el teléfono, el chat y la agenda, coordinar citas se vuelve un trabajo aparte.",
+      "narration_en": "Repeated questions and unanswered messages take up your time, and can leave customers waiting. Between the phone, the chat and the calendar, coordinating appointments becomes a job of its own."
+    },
+    {
+      "id": "s2-que-es",
+      "chapter": "que-es",
+      "title": "ORQENTIVA",
+      "narration": "ORQENTIVA reúne en un solo lugar tus servicios, tus horarios, tu equipo y tus reservas. Y pone un asistente a atender a tus clientes.",
+      "narration_en": "ORQENTIVA brings your services, your hours, your team and your bookings together in one place. And it puts an assistant to work for your customers."
+    },
+    {
+      "id": "s3-chat",
+      "chapter": "como-funciona",
+      "title": "Reserva por chat",
+      "narration": "Tu cliente abre tu enlace y escribe como hablaría contigo: «Quiero un corte clásico con Ana el sábado a las diez». El asistente consulta la disponibilidad, propone la cita y solo la guarda cuando el cliente la confirma.",
+      "narration_en": "Your customer opens your link and writes the way they would talk to you: “I want a classic haircut with Ana on Saturday at ten”. The assistant checks availability, proposes the appointment and only saves it when the customer confirms."
+    },
+    {
+      "id": "s4-fuentes",
+      "chapter": "como-funciona",
+      "title": "Respuestas con fuente",
+      "narration": "¿Dudas sobre cancelaciones o políticas? El asistente responde a partir de los documentos que tú publicas, y muestra de dónde sale cada respuesta.",
+      "narration_en": "Questions about cancellations or policies? The assistant answers from the documents you publish, and shows where each answer comes from."
+    },
+    {
+      "id": "s4b-whatsapp",
+      "chapter": "como-funciona",
+      "title": "Próximamente: WhatsApp",
+      "narration": "Y próximamente, el mismo asistente atenderá a tus clientes también por WhatsApp.",
+      "narration_en": "And coming soon, the same assistant will also serve your customers on WhatsApp."
+    },
+    {
+      "id": "s5-panel",
+      "chapter": "como-funciona",
+      "title": "Tu panel",
+      "narration": "Desde tu panel defines servicios, precios y duración, los horarios y quién atiende cada cosa. Cada reserva aparece en tu agenda, con el contacto del cliente.",
+      "narration_en": "From your dashboard you set services, prices and durations, opening hours and who handles what. Every booking shows up in your calendar, with the customer's contact."
+    },
+    {
+      "id": "s6-beneficios",
+      "chapter": "beneficios",
+      "title": "Menos tareas, más orden",
+      "narration": "Así tu equipo dedica menos tiempo a mensajes repetidos, la agenda evita citas cruzadas y la información de tu negocio se mantiene separada de la de los demás.",
+      "narration_en": "So your team spends less time on repeated messages, the calendar avoids double bookings and your business information stays separate from everyone else's."
+    },
+    {
+      "id": "s7-cta",
+      "chapter": "beneficios",
+      "title": "Solicita una asesoría",
+      "narration": "Cada negocio es distinto, por eso empezamos por entender el tuyo. Cuéntanos qué necesitas en el formulario de contacto y preparamos una propuesta.",
+      "narration_en": "Every business is different, so we start by understanding yours. Tell us what you need in the contact form and we will prepare a proposal."
+    }
+  ],
+  "pronunciation": {
+    "ORQENTIVA": "Orquentiva"
+  }
+}
