@@ -47,7 +47,7 @@ export function cues(narration, max = 78) {
   const parts = narration.match(/[^,.;:?!»”]+[,.;:?!»”]*\s*/g).map(p => p.trim()).filter(Boolean);
   const out = [];
   for (const part of parts) {
-    const last = out[out.length - 1];
+    const last = out.at(-1);
     const sentenceEnd = last && /[.?!»”]$/.test(last);
     if (last && !sentenceEnd && (last + ' ' + part).length <= max) out[out.length - 1] = last + ' ' + part;
     else if (last && sentenceEnd && last.length < 28 && (last + ' ' + part).length <= max) out[out.length - 1] = last + ' ' + part;

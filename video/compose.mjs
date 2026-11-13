@@ -69,7 +69,7 @@ console.log(`${path.relative(process.cwd(), final)}: ${total.toFixed(1)} s, ${(f
 {
   const style = "FontName=Inter,FontSize=13,Bold=1,PrimaryColour=&H00FFFFFF,BackColour=&HA0291F10,BorderStyle=4,Outline=0,Shadow=0,MarginV=22";
   const out = path.join(OUT, NAME + '.subtitulado.mp4');
-  const srtArg = srt.replaceAll('\\', '/').replace(':', '\\:');
+  const srtArg = srt.replaceAll('\\', '/').replace(':', String.raw`\:`);
   ffmpeg(['-i', silent, ...audioIn, '-vf', `subtitles='${srtArg}':force_style='${style}'`, '-c:v', 'libx264', '-preset', 'medium',
     '-crf', '22', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', ...audioOut, out]);
   console.log(`${path.relative(process.cwd(), out)}: versión para redes, con subtítulos incrustados`);

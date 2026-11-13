@@ -201,5 +201,5 @@ Reservas públicas: http://127.0.0.1:5179/#reservar/alfa y http://127.0.0.1:5179
 
 - Repositorio: https://github.com/Ciscojes/orqentiva-technologies
 - Presentación: _pendiente de añadir el enlace público_
-- Vídeo: _pendiente de añadir_
+- Vídeo comercial de presentación: [frontend/public/presentacion.mp4](frontend/public/presentacion.mp4); también se reproduce en la página de inicio. El vídeo de defensa del TFM no está incluido.
 - Despliegue: _pendiente de añadir la URL_ (ver [Despliegue](#despliegue))

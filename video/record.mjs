@@ -7,9 +7,8 @@ import { chromium } from 'playwright';
 import { FPS, HEIGHT, PAGE_ZOOM, VIDEO, WIDTH, WORK, chapterLabel, ffmpeg, sceneDurations, script } from './lib.mjs';
 
 const BASE = process.env.VIDEO_BASE_URL || 'http://127.0.0.1:5179';
-const DEMO_USER = 'alfa@example.com';
-// Contraseña de la demo local ficticia (la misma del README); no es una credencial real.
-const DEMO_PASSWORD = 'Orqentiva-Demo-2026!';
+// Acceso al panel de la base ficticia: lo genera seed_demo.py en cada ejecución.
+const demoLogin = JSON.parse(fs.readFileSync(path.join(WORK, 'demo-login.json'), 'utf8'));
 const CHAT_MESSAGE = 'Quiero un corte clásico con Ana el sábado a las 10';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const ease = t => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
@@ -98,8 +97,8 @@ async function open(hash, ready) {
 }
 async function login() {
   await open('#login', '#login-email');
-  await page.locator('#login-email').fill(DEMO_USER);
-  await page.locator('#login-password').fill(DEMO_PASSWORD);
+  await page.locator('#login-email').fill(demoLogin.email);
+  await page.locator('#login-password').fill(demoLogin.password);
   await page.locator('#access form button').first().click();
   await page.locator('#client-services').waitFor();
 }
@@ -386,7 +385,7 @@ async function record(scene, seconds) {
     const start = Math.max(f.t, t0), end = i + 1 < kept.length ? kept[i + 1].t : t1;
     return `file '${f.file.replaceAll('\\', '/')}'\nduration ${Math.max(0.001, (end - start) / 1000).toFixed(4)}`;
   });
-  lines.push(`file '${kept[kept.length - 1].file.replaceAll('\\', '/')}'`);
+  lines.push(`file '${kept.at(-1).file.replaceAll('\\', '/')}'`);
   const list = path.join(dir, 'frames.txt');
   fs.writeFileSync(list, lines.join('\n') + '\n');
   const total = (t1 - t0) / 1000, out = path.join(WORK, 'scenes', scene.id + '.mp4');

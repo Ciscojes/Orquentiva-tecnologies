@@ -3,7 +3,9 @@
 Crea video/.work/demo.sqlite3 desde cero en cada ejecución (nunca toca la base
 habitual ni tfm-demo.sqlite3). Uso: python video/seed_demo.py
 """
+import json
 import os
+import secrets
 import sys
 from datetime import datetime, time, timedelta, timezone
 from pathlib import Path
@@ -11,8 +13,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 WORK = ROOT / "video" / ".work"
 DB = WORK / "demo.sqlite3"
-# Contraseña de la demo local documentada en el README; solo existe en esta base ficticia.
-PASSWORD = "Orqentiva-Demo-2026!"
+LOGIN = WORK / "demo-login.json"
+DEMO_EMAIL = "alfa@example.com"
+ANA, DIEGO, SOFIA = "Ana", "Diego", "Sofía"
 
 SERVICES = [  # nombre, precio en colones, minutos
     ("Corte clásico", 5000, 30),
@@ -21,9 +24,9 @@ SERVICES = [  # nombre, precio en colones, minutos
     ("Corte infantil", 4000, 30),
 ]
 TEAM = {  # profesional -> índices de servicios que ofrece
-    "Ana": [0, 1, 3],
-    "Diego": [0, 1, 2],
-    "Sofía": [0, 2, 3],
+    ANA: [0, 1, 3],
+    DIEGO: [0, 1, 2],
+    SOFIA: [0, 2, 3],
 }
 DOCUMENTS = [
     ("Cancelaciones", "Para cancelar o cambiar tu cita, avisa con 24 horas de anticipación. "
@@ -33,20 +36,24 @@ DOCUMENTS = [
 ]
 # Citas ya agendadas: (días desde hoy, hora, profesional, índice de servicio, cliente, contacto)
 BOOKINGS = [
-    (1, "09:00", "Ana", 0, "Marco Solís", "marco.solis@example.com"),
-    (1, "10:30", "Diego", 1, "Esteban Rojas", "esteban.rojas@example.com"),
-    (1, "14:00", "Sofía", 3, "Valeria Mora", "valeria.mora@example.com"),
-    (2, "09:30", "Diego", 2, "Andrés Vargas", "andres.vargas@example.com"),
-    (2, "11:00", "Ana", 1, "Luis Castro", "luis.castro@example.com"),
-    (2, "15:30", "Sofía", 0, "Gabriel Jiménez", "gabriel.jimenez@example.com"),
-    (3, "09:00", "Sofía", 2, "Daniel Chaves", "daniel.chaves@example.com"),
-    (3, "11:30", "Diego", 0, "José Quesada", "jose.quesada@example.com"),
+    (1, "09:00", ANA, 0, "Marco Solís", "marco.solis@example.com"),
+    (1, "10:30", DIEGO, 1, "Esteban Rojas", "esteban.rojas@example.com"),
+    (1, "14:00", SOFIA, 3, "Valeria Mora", "valeria.mora@example.com"),
+    (2, "09:30", DIEGO, 2, "Andrés Vargas", "andres.vargas@example.com"),
+    (2, "11:00", ANA, 1, "Luis Castro", "luis.castro@example.com"),
+    (2, "15:30", SOFIA, 0, "Gabriel Jiménez", "gabriel.jimenez@example.com"),
+    (3, "09:00", SOFIA, 2, "Daniel Chaves", "daniel.chaves@example.com"),
+    (3, "11:30", DIEGO, 0, "José Quesada", "jose.quesada@example.com"),
 ]
 
 
 def main():
     WORK.mkdir(parents=True, exist_ok=True)
     DB.unlink(missing_ok=True)
+    # El acceso al panel se genera en cada ejecución y solo vive en video/.work (ignorado por git);
+    # la grabación lo lee de ahí. Ningún archivo del proyecto contiene una contraseña.
+    access = secrets.token_urlsafe(18)
+    LOGIN.write_text(json.dumps({"email": DEMO_EMAIL, "password": access}), encoding="utf-8")
     os.environ["DATABASE_URL"] = "sqlite:///" + DB.as_posix()
     sys.path.insert(0, str(ROOT))
     os.chdir(ROOT)
@@ -66,8 +73,7 @@ def main():
         session.add(Business(id="alfa", name="Barbería Alfa"))
         session.add(Business(id="beta", name="Barbería Beta"))
         session.flush()
-        create_user(session, UserCreate(email="admin@example.com", password=PASSWORD, role="super_admin", business_id=None))
-        create_user(session, UserCreate(email="alfa@example.com", password=PASSWORD, role="business_admin", business_id="alfa"))
+        create_user(session, UserCreate(email=DEMO_EMAIL, password=access, role="business_admin", business_id="alfa"))
         services = [Service(business_id="alfa", name=n, price_crc=p, duration_minutes=m) for n, p, m in SERVICES]
         session.add_all(services)
         session.flush()

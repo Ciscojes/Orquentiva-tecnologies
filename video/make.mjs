@@ -6,10 +6,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { OUT, ROOT, VIDEO, WORK } from './lib.mjs';
 
-const args = process.argv.slice(2);
+const args = new Set(process.argv.slice(2));
 const API_PORT = 8003, WEB_PORT = 5180;
 const DB = path.join(WORK, 'demo.sqlite3');
-const python = [path.join(ROOT, '.venv', 'Scripts', 'python.exe'), path.join(ROOT, '.venv', 'bin', 'python')].find(fs.existsSync)
+const python = [path.join(ROOT, '.venv', 'Scripts', 'python.exe'), path.join(ROOT, '.venv', 'bin', 'python')].find(candidate => fs.existsSync(candidate))
   || (process.platform === 'win32' ? 'python' : 'python3');
 const vite = path.join(ROOT, 'frontend', 'node_modules', 'vite', 'bin', 'vite.js');
 if (!fs.existsSync(vite)) throw new Error('Faltan las dependencias del frontend: ejecuta "npm ci" en la carpeta frontend.');
@@ -43,7 +43,7 @@ if (step('Datos de demostración ficticios', python, [path.join(VIDEO, 'seed_dem
 
 console.log('\n== Aplicación en local');
 // Sin --con-ia el chat usa solo reglas: el resultado es el mismo en cada ejecución.
-const llm = args.includes('--con-ia') ? {} : { LLM_API_KEY: '', LLM_MODEL: '' };
+const llm = args.has('--con-ia') ? {} : { LLM_API_KEY: '', LLM_MODEL: '' };
 serve('api', python, ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', String(API_PORT)], {
   DATABASE_URL: 'sqlite:///' + DB.replaceAll('\\', '/'), AUTH_COOKIE_SECURE: 'false',
   AUTH_ALLOWED_ORIGINS: `http://127.0.0.1:${WEB_PORT}`, ...llm,
@@ -54,7 +54,7 @@ await waitFor(`http://127.0.0.1:${API_PORT}/health`, 'La API');
 await waitFor(`http://127.0.0.1:${WEB_PORT}/`, 'El frontend');
 
 const node = script => [process.execPath, [path.join(VIDEO, script)]];
-if (!args.includes('--sin-voz')) {
+if (!args.has('--sin-voz')) {
   const status = step('Narración (ElevenLabs)', ...node('tts.mjs'));
   if (status === 2) console.log('Se continúa con los audios que ya existan en video/audio; las escenas sin audio quedarán mudas.');
   else if (status) process.exit(1);

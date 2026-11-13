@@ -111,6 +111,6 @@ export default function PublicBooking({business,language}:{business:string;langu
       <label>{t.customer}<input required maxLength={100} value={name} onChange={e=>{setName(e.target.value);setKey(crypto.randomUUID());}}/></label>
       <label>{t.contact}<input required maxLength={254} autoComplete="on" value={contact} aria-describedby="contact-help" onChange={e=>{setContact(e.target.value);setKey(crypto.randomUUID());}}/></label>
       <small id="contact-help">{t.contactHelp}</small>
-      <button className="btn btn-primary" disabled={!stamp||!name.trim()||!contact.trim()||loading}>{t.confirm}</button>
+      <button type="submit" className="btn btn-primary" disabled={!stamp||!name.trim()||!contact.trim()||loading}>{t.confirm}</button>
     </fieldset></form>}</section>;
 }

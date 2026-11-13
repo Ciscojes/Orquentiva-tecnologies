@@ -28,7 +28,7 @@ const copy = {
 
 const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
 
-export default function VideoPresentation({ language }: { language: Language }) {
+export default function VideoPresentation({ language }: Readonly<{ language: Language }>) {
   const t = copy[language];
   const { chapters, duration } = presentation;
   // El video no se descarga hasta que el visitante lo pide: antes solo hay una imagen ligera.
@@ -84,8 +84,8 @@ export default function VideoPresentation({ language }: { language: Language }) 
             <video ref={video} controls autoPlay playsInline preload="metadata" poster={POSTER}
               onLoadedMetadata={onReady} onPlaying={syncSubtitles} onTimeUpdate={onTime} aria-label={t.title}>
               <source src={VIDEO} type="video/mp4" />
-              <track kind="subtitles" src={SUBTITLES.es} srcLang="es" label="Español" default={language === "es"} />
-              <track kind="subtitles" src={SUBTITLES.en} srcLang="en" label="English" default={language === "en"} />
+              <track kind="captions" src={SUBTITLES.es} srcLang="es" label="Español" default={language === "es"} />
+              <track kind="captions" src={SUBTITLES.en} srcLang="en" label="English" default={language === "en"} />
             </video>
           ) : (
             <button type="button" className="video-poster" onClick={() => open(0)} aria-label={t.play}>
@@ -98,7 +98,7 @@ export default function VideoPresentation({ language }: { language: Language }) 
           )}
         </div>
 
-        <div className="video-chapters" role="group" aria-label={t.chapters}>
+        <nav className="video-chapters" aria-label={t.chapters}>
           {chapters.map((chapter, index) => (
             <button type="button" key={chapter.id} onClick={() => open(chapter.start)}
               className={started && active === chapter.id ? "video-chapter is-active" : "video-chapter"}
@@ -108,7 +108,7 @@ export default function VideoPresentation({ language }: { language: Language }) 
               <span className="video-chapter-time">{clock(chapter.start)}</span>
             </button>
           ))}
-        </div>
+        </nav>
         <p className="video-note">{t.note}</p>
       </div>
     </section>

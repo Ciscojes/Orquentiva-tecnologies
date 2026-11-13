@@ -121,7 +121,7 @@
       const fresh = !spot.classList.contains('on');
       if (fresh) spot.style.transition = 'opacity .35s ease';
       Object.assign(spot.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px' });
-      if (fresh) { void spot.offsetWidth; }
+      if (fresh) spot.getBoundingClientRect(); // fuerza el recalculo para que la posicion no se anime
       spot.classList.add('on');
       if (fresh) setTimeout(() => { spot.style.transition = ''; }, 400);
     },
